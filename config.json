@@ -1,0 +1,24 @@
+{
+  "site": {
+    "name": "Portal G3",
+    "url": "https://portal-g3.com",
+    "lang": "pt-BR",
+    "description": "Portal G3"
+  },
+  "build": {
+    "minifyHTML": true,
+    "minifyCSS": true,
+    "minifyJS": true,
+    "hashAssets": true,
+    "generateSitemap": true
+  },
+  "partials": {
+    "head": "partials/head.html",
+    "header": "partials/header.html",
+    "footer": "partials/footer.html"
+  },
+  "meta": {
+    "defaultImage": "assets/imgs/og-default.jpg",
+    "twitterHandle": "@handle"
+  }
+}
