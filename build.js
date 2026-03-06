@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import { clean } from './lib/clean.js';
 import { processAssets } from './lib/assets.js';
 import { processPages } from './lib/pages.js';
-import { generateSitemap } from './lib/sitemap.js';
 import { generateRedirects } from './lib/redirects.js';
 
 let ROOT = process.cwd();
@@ -43,11 +42,6 @@ export async function build() {
 
   console.log('Processando paginas...');
   const routes = await processPages(srcDir, distDir, manifest, config);
-
-  if (config.build?.generateSitemap !== false) {
-    console.log('Gerando sitemap.xml...');
-    await generateSitemap(distDir, routes, config.site.url);
-  }
 
   console.log('Gerando _redirects...');
   await generateRedirects(distDir);
