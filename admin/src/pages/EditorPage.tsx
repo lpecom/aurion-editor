@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Globe } from 'lucide-react';
 import GrapesEditor from '../editor/GrapesEditor';
+import PublishModal from '../components/PublishModal';
 
 interface PageData {
   id: string;
@@ -9,13 +10,14 @@ interface PageData {
   slug?: string;
   type?: string;
   status?: string;
+  category_id?: string | null;
 }
 
 export default function EditorPage() {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
   const [page, setPage] = useState<PageData | null>(null);
-  const [publishing, setPublishing] = useState(false);
+  const [showPublish, setShowPublish] = useState(false);
 
   useEffect(() => {
     if (!pageId) return;
@@ -27,22 +29,6 @@ export default function EditorPage() {
         // Page load failed
       }
     })();
-  }, [pageId]);
-
-  const handlePublish = useCallback(async () => {
-    if (!pageId) return;
-    setPublishing(true);
-    try {
-      const res = await fetch(`/api/pages/${pageId}/publish`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Publish failed');
-    } catch {
-      // Publish error
-    } finally {
-      setPublishing(false);
-    }
   }, [pageId]);
 
   if (!pageId) return null;
@@ -95,13 +81,12 @@ export default function EditorPage() {
         </span>
 
         <button
-          onClick={handlePublish}
-          disabled={publishing}
+          onClick={() => setShowPublish(true)}
           style={{
             background: '#22C55E',
             border: 'none',
             color: '#fff',
-            cursor: publishing ? 'not-allowed' : 'pointer',
+            cursor: 'pointer',
             padding: '5px 14px',
             borderRadius: 6,
             fontSize: '0.8125rem',
@@ -109,12 +94,11 @@ export default function EditorPage() {
             display: 'flex',
             alignItems: 'center',
             gap: 5,
-            opacity: publishing ? 0.7 : 1,
           }}
           title="Publicar"
         >
           <Globe size={13} />
-          {publishing ? 'Publicando...' : 'Publicar'}
+          Publicar
         </button>
       </header>
 
@@ -122,6 +106,16 @@ export default function EditorPage() {
       <div style={{ flex: 1, overflow: 'hidden' }}>
         <GrapesEditor pageId={pageId} />
       </div>
+
+      {/* Publish Modal */}
+      <PublishModal
+        open={showPublish}
+        onClose={() => setShowPublish(false)}
+        pageId={pageId}
+        pageType={page?.type || 'pv'}
+        currentCategoryId={page?.category_id}
+        currentSlug={page?.slug}
+      />
     </div>
   );
 }

@@ -145,6 +145,7 @@ export default async function pagesRoutes(fastify) {
           type: { type: 'string', enum: ['pv', 'advertorial'] },
           lang: { type: 'string' },
           domain: { type: 'string' },
+          category_id: { type: 'string' },
           frontmatter: { type: 'object' },
           category_config: { type: 'object' },
         },
@@ -159,7 +160,7 @@ export default async function pagesRoutes(fastify) {
       return reply.code(404).send({ error: 'Page not found' });
     }
 
-    const { title, slug, type, lang, domain, frontmatter, category_config } = request.body;
+    const { title, slug, type, lang, domain, category_id, frontmatter, category_config } = request.body;
 
     // Check slug uniqueness if changing
     if (slug && slug !== existing.slug) {
@@ -176,6 +177,7 @@ export default async function pagesRoutes(fastify) {
         type = COALESCE(?, type),
         lang = COALESCE(?, lang),
         domain = COALESCE(?, domain),
+        category_id = COALESCE(?, category_id),
         frontmatter = COALESCE(?, frontmatter),
         category_config = COALESCE(?, category_config),
         updated_at = datetime('now')
@@ -186,6 +188,7 @@ export default async function pagesRoutes(fastify) {
       type || null,
       lang || null,
       domain !== undefined ? domain : null,
+      category_id || null,
       frontmatter ? JSON.stringify(frontmatter) : null,
       category_config ? JSON.stringify(category_config) : null,
       id
