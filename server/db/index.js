@@ -32,6 +32,12 @@ function initSchema(db) {
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schema);
+
+  // Migrations: add columns if missing
+  const cols = db.prepare("PRAGMA table_info(pages)").all().map(c => c.name);
+  if (!cols.includes('project_data')) {
+    db.exec("ALTER TABLE pages ADD COLUMN project_data TEXT");
+  }
 }
 
 export function closeDb() {

@@ -1,131 +1,133 @@
-import { useCallback, useState, useEffect } from 'react';
-import StudioEditor from '@grapesjs/studio-sdk/react';
+import { useEffect, useRef } from 'react';
+import createStudioEditor from '@grapesjs/studio-sdk';
+import { rteProseMirror, layoutSidebarButtons } from '@grapesjs/studio-sdk-plugins';
 import '@grapesjs/studio-sdk/style';
+
+const LICENSE_KEY = '8c93dd03c9f24371b288ff462cb73f5d078f0cafb90a42c5883923539fa3de15';
 
 interface GrapesEditorProps {
   pageId: string;
-  initialContent?: string;
-  onSave?: () => void;
 }
 
-export default function GrapesEditor({ pageId, initialContent, onSave }: GrapesEditorProps) {
-  const [projectData, setProjectData] = useState<Record<string, unknown> | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function GrapesEditor({ pageId }: GrapesEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<any>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/pages/${pageId}`, { credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to load');
-        const data = await res.json();
-        if (cancelled) return;
+    if (!containerRef.current) return;
 
-        const html = data.html_content || initialContent || '<h1>Nova página</h1>';
-        setProjectData({
-          pages: [{ name: data.title || 'Page', component: html }],
-        });
-      } catch {
-        if (!cancelled) {
-          setProjectData({
-            pages: [{ name: 'Page', component: initialContent || '<h1>Nova página</h1>' }],
+    // Ensure container has a unique ID for the SDK
+    const containerId = `studio-editor-${pageId}`;
+    containerRef.current.id = containerId;
+
+    const editor = createStudioEditor({
+      root: `#${containerId}`,
+      licenseKey: LICENSE_KEY,
+      project: {
+        type: 'web',
+      },
+      assets: {
+        storageType: 'self',
+        onUpload: async ({ files }) => {
+          const body = new FormData();
+          for (const file of files) {
+            body.append('files', file);
+          }
+          const response = await fetch('/api/images/upload', {
+            method: 'POST',
+            credentials: 'include',
+            body,
           });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [pageId, initialContent]);
+          const result = await response.json();
+          // Normalize response to expected format
+          if (Array.isArray(result)) return result;
+          // Single file upload response
+          return [{ src: result.url, name: result.filename || result.original_name }];
+        },
+        onDelete: async ({ assets }) => {
+          for (const asset of assets) {
+            const src = asset.getSrc();
+            // Extract image ID from URL if possible
+            const match = src.match(/\/api\/images\/([^/]+)/);
+            if (match) {
+              await fetch(`/api/images/${match[1]}`, {
+                method: 'DELETE',
+                credentials: 'include',
+              });
+            }
+          }
+        },
+      },
+      storage: {
+        type: 'self',
+        autosaveChanges: 100,
+        autosaveIntervalMs: 10000,
+        onSave: async ({ project }) => {
+          // Save project JSON + export HTML for publishing
+          const files = await (editor as any).runCommand?.('studio:projectFiles', { styles: 'inline' });
+          const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
+          const htmlContent = htmlFile?.content || '';
 
-  const handleSave = useCallback(async ({ project, editor }: { project: unknown; editor: unknown }) => {
-    try {
-      // Get HTML files from the project
-      const files = await (editor as any).runCommand('studio:projectFiles', { styles: 'inline' });
-      const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
-      const htmlContent = htmlFile?.content || '';
-
-      const res = await fetch(`/api/pages/${pageId}/content`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          html_content: htmlContent,
-          project_data: JSON.stringify(project),
-        }),
-      });
-      if (!res.ok) throw new Error('Save failed');
-      onSave?.();
-    } catch (err) {
-      console.error('Save error:', err);
-    }
-  }, [pageId, onSave]);
-
-  const handleUpload = useCallback(async ({ files }: { files: File[] }) => {
-    const results = [];
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const res = await fetch('/api/images/upload', {
-          method: 'POST',
-          credentials: 'include',
-          body: formData,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          results.push({
-            id: data.id || data.url,
-            src: data.url,
-            name: data.filename || file.name,
-            mimeType: file.type,
-            size: file.size,
+          await fetch(`/api/pages/${pageId}/content`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              html_content: htmlContent,
+              project_data: JSON.stringify(project),
+            }),
           });
-        }
-      } catch {
-        // Skip failed uploads
-      }
-    }
-    return results;
-  }, []);
+        },
+        onLoad: async () => {
+          const response = await fetch(`/api/pages/${pageId}`, {
+            credentials: 'include',
+          });
+          if (!response.ok) {
+            return {
+              project: {
+                pages: [{ name: 'Home', component: '<h1>Nova página</h1>' }],
+              },
+            };
+          }
+          const data = await response.json();
 
-  if (loading || !projectData) {
-    return (
-      <div style={{
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#020617',
-        color: '#94A3B8',
-        fontSize: '0.875rem',
-      }}>
-        Carregando editor...
-      </div>
-    );
-  }
+          // If we have saved project_data (GrapesJS JSON), use it
+          if (data.project_data) {
+            try {
+              const project = JSON.parse(data.project_data);
+              return { project };
+            } catch {
+              // Fall through to HTML import
+            }
+          }
+
+          // Otherwise import from raw HTML content
+          const html = data.html_content || '<h1>Nova página</h1>';
+          return {
+            project: {
+              pages: [{ name: data.title || 'Page', component: html }],
+            },
+          };
+        },
+      },
+      plugins: [
+        rteProseMirror.init({}),
+        layoutSidebarButtons.init({}),
+      ],
+    });
+
+    editorRef.current = editor;
+
+    return () => {
+      // Cleanup: the SDK handles its own destruction
+      editorRef.current = null;
+    };
+  }, [pageId]);
 
   return (
-    <StudioEditor
-      options={{
-        licenseKey: 'DEV_LICENSE_KEY',
-        theme: 'dark',
-        project: {
-          type: 'web',
-          default: projectData as any,
-        },
-        storage: {
-          type: 'self',
-          autosaveChanges: 5,
-          autosaveIntervalMs: 30000,
-          project: projectData,
-          onSave: handleSave as any,
-        },
-        assets: {
-          storageType: 'self',
-          onUpload: handleUpload as any,
-        },
-      }}
+    <div
+      ref={containerRef}
+      style={{ height: '100%', width: '100%' }}
     />
   );
 }

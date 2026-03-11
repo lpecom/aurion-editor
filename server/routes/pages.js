@@ -199,14 +199,14 @@ export default async function pagesRoutes(fastify) {
     };
   });
 
-  // PUT /api/pages/:id/content — save HTML from editor
+  // PUT /api/pages/:id/content — save HTML + project data from editor
   fastify.put('/pages/:id/content', {
     schema: {
       body: {
         type: 'object',
-        required: ['html_content'],
         properties: {
           html_content: { type: 'string' },
+          project_data: { type: 'string' },
         },
       },
     },
@@ -219,9 +219,21 @@ export default async function pagesRoutes(fastify) {
       return reply.code(404).send({ error: 'Page not found' });
     }
 
-    db.prepare(`
-      UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?
-    `).run(request.body.html_content, id);
+    const { html_content, project_data } = request.body;
+
+    if (html_content && project_data) {
+      db.prepare(`
+        UPDATE pages SET html_content = ?, project_data = ?, updated_at = datetime('now') WHERE id = ?
+      `).run(html_content, project_data, id);
+    } else if (html_content) {
+      db.prepare(`
+        UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?
+      `).run(html_content, id);
+    } else if (project_data) {
+      db.prepare(`
+        UPDATE pages SET project_data = ?, updated_at = datetime('now') WHERE id = ?
+      `).run(project_data, id);
+    }
 
     return { ok: true };
   });
