@@ -15,7 +15,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          grapesjs: ['grapesjs', 'grapesjs-preset-webpage', 'grapesjs-blocks-basic'],
+          'studio-sdk': ['@grapesjs/studio-sdk'],
           vendor: ['react', 'react-dom', 'react-router-dom'],
         }
       }
