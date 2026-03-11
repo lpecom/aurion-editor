@@ -17,18 +17,22 @@ import categoriesRoutes from './routes/categories.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
-const fastify = Fastify({
-  logger: {
-    level: 'info',
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        translateTime: 'HH:MM:ss Z',
-        ignore: 'pid,hostname',
+const isProd = process.env.NODE_ENV === 'production';
+
+const loggerConfig = isProd
+  ? { level: 'info' }
+  : {
+      level: 'info',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname',
+        },
       },
-    },
-  },
-});
+    };
+
+const fastify = Fastify({ logger: loggerConfig });
 
 // Initialize database on startup
 getDb();

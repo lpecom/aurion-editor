@@ -1,8 +1,11 @@
 {
-  "name": "staticflow-cms",
-  "version": "0.1.0",
-  "description": "Minimalista static site framework with clean routes, asset hashing and zero runtime",
+  "name": "aurion-editor",
+  "version": "1.0.0",
+  "description": "Admin panel with visual HTML editor for static sites",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "staticflow": "./bin/staticflow.js"
   },
@@ -10,9 +13,9 @@
     "dev": "node server/server.js",
     "dev:admin": "cd admin && ./node_modules/.bin/vite",
     "dev:full": "node server/server.js & cd admin && ./node_modules/.bin/vite --port 5173",
-    "build:admin": "cd admin && ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build",
+    "build:admin": "cd admin && npm install && ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build",
     "build:site": "node build.js build",
-    "build:all": "npm run build:admin && npm run build:site",
+    "build": "npm run build:admin && npm run build:site",
     "start": "NODE_ENV=production node server/server.js",
     "server": "node server/server.js",
     "clean": "node build.js clean",
@@ -27,14 +30,14 @@
     "better-sqlite3": "^11.8.1",
     "dotenv": "^16.4.7",
     "uuid": "^11.1.0",
-    "pino-pretty": "^13.0.0"
-  },
-  "devDependencies": {
     "html-minifier-terser": "^7.2.0",
     "terser": "^5.36.0",
     "clean-css": "^5.3.3",
     "sharp": "^0.33.5",
     "glob": "^10.4.5",
     "chokidar": "^3.6.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.0.0"
   }
 }
