@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { clean } from './lib/clean.js';
 import { processAssets } from './lib/assets.js';
-import { processPages } from './lib/pages.js';
+import { processPages, processSinglePage } from './lib/pages.js';
 import { generateRedirects } from './lib/redirects.js';
 
 let ROOT = process.cwd();
@@ -48,4 +48,35 @@ export async function build() {
 
   const elapsed = Date.now() - startTime;
   console.log(`Build completo em ${elapsed}ms — ${routes.length} paginas, ${Object.keys(manifest).length} assets`);
+}
+
+/**
+ * Selective build: only process a single page without cleaning dist.
+ * Re-uses existing asset manifest if available.
+ */
+export async function selectiveBuild(slug) {
+  const startTime = Date.now();
+  const config = loadConfig();
+  const distDir = path.join(ROOT, 'dist');
+  const srcDir = ROOT;
+
+  // Load existing manifest or rebuild assets
+  const manifestPath = path.join(distDir, 'asset-manifest.json');
+  let manifest;
+  if (fs.existsSync(manifestPath)) {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } else {
+    console.log('Processando assets...');
+    if (!fs.existsSync(distDir)) {
+      fs.mkdirSync(distDir, { recursive: true });
+    }
+    manifest = await processAssets(srcDir, distDir, config.build ?? {});
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+  }
+
+  console.log(`Processando pagina: ${slug}...`);
+  await processSinglePage(srcDir, distDir, manifest, config, slug);
+
+  const elapsed = Date.now() - startTime;
+  console.log(`Build seletivo completo em ${elapsed}ms — pagina: ${slug}`);
 }

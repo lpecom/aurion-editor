@@ -1,0 +1,56 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './auth/AuthContext';
+import { AuthGuard } from './auth/AuthGuard';
+import AdminLayout from './layouts/AdminLayout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import SalesPages from './pages/SalesPages';
+import Advertorials from './pages/Advertorials';
+import Images from './pages/resources/Images';
+import Pixels from './pages/resources/Pixels';
+import Domains from './pages/resources/Domains';
+import Scripts from './pages/resources/Scripts';
+import ConversionBoosters from './pages/ConversionBoosters';
+import Translations from './pages/Translations';
+import Integrations from './pages/Integrations';
+import EditorPage from './pages/EditorPage';
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/admin/login" element={<Login />} />
+          {/* Editor route - full screen, no AdminLayout */}
+          <Route
+            path="/admin/editor/:pageId"
+            element={
+              <AuthGuard>
+                <EditorPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AuthGuard>
+                <AdminLayout />
+              </AuthGuard>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="paginas-de-venda" element={<SalesPages />} />
+            <Route path="advertoriais" element={<Advertorials />} />
+            <Route path="recursos/imagens" element={<Images />} />
+            <Route path="recursos/pixels" element={<Pixels />} />
+            <Route path="recursos/dominios" element={<Domains />} />
+            <Route path="recursos/scripts" element={<Scripts />} />
+            <Route path="conversion-boosters" element={<ConversionBoosters />} />
+            <Route path="traducoes" element={<Translations />} />
+            <Route path="integracoes" element={<Integrations />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}

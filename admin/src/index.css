@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #020617;
+  --color-surface: #0F172A;
+  --color-surface-2: #1E293B;
+  --color-border: #334155;
+  --color-text: #F8FAFC;
+  --color-text-muted: #94A3B8;
+  --color-primary: #22C55E;
+  --color-accent: #3B82F6;
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
+
+  --font-sans: 'Fira Sans', system-ui, sans-serif;
+  --font-mono: 'Fira Code', monospace;
+}

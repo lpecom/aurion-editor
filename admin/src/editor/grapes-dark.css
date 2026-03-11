@@ -1,0 +1,271 @@
+/* Aurion Dark Theme for GrapesJS */
+
+/* Main editor container */
+.gjs-one-bg {
+  background-color: #0F172A !important;
+}
+
+.gjs-two-color {
+  color: #F8FAFC !important;
+}
+
+.gjs-three-bg {
+  background-color: #1E293B !important;
+}
+
+.gjs-four-color,
+.gjs-four-color-h:hover {
+  color: #22C55E !important;
+}
+
+/* Panels */
+.gjs-pn-panel {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+}
+
+.gjs-pn-views-container,
+.gjs-pn-views {
+  background-color: #0F172A !important;
+}
+
+/* Toolbar */
+.gjs-toolbar {
+  background-color: #1E293B !important;
+  border: 1px solid #334155 !important;
+}
+
+.gjs-toolbar-item {
+  color: #F8FAFC !important;
+}
+
+/* Canvas */
+.gjs-cv-canvas {
+  background-color: #020617 !important;
+}
+
+/* Frames */
+.gjs-frame-wrapper {
+  background-color: #020617 !important;
+}
+
+/* Blocks */
+.gjs-blocks-cs {
+  background-color: #0F172A !important;
+}
+
+.gjs-block {
+  background-color: #1E293B !important;
+  border: 1px solid #334155 !important;
+  color: #F8FAFC !important;
+  border-radius: 6px !important;
+  min-height: 60px !important;
+}
+
+.gjs-block:hover {
+  border-color: #22C55E !important;
+  box-shadow: 0 0 0 1px #22C55E !important;
+}
+
+.gjs-block__media {
+  color: #94A3B8 !important;
+}
+
+.gjs-block-label {
+  color: #F8FAFC !important;
+  font-size: 11px !important;
+}
+
+/* Block categories */
+.gjs-block-category {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+}
+
+.gjs-block-category .gjs-title {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+/* Style Manager */
+.gjs-sm-sector {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+}
+
+.gjs-sm-sector .gjs-sm-sector-title {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+.gjs-sm-label,
+.gjs-sm-sector-label {
+  color: #94A3B8 !important;
+}
+
+.gjs-field {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+.gjs-field input,
+.gjs-field select,
+.gjs-field textarea {
+  color: #F8FAFC !important;
+  background-color: #1E293B !important;
+}
+
+/* Layer Manager */
+.gjs-layers {
+  background-color: #0F172A !important;
+}
+
+.gjs-layer {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+}
+
+.gjs-layer:hover {
+  background-color: #1E293B !important;
+}
+
+.gjs-layer-name {
+  color: #F8FAFC !important;
+}
+
+/* Trait Manager */
+.gjs-trt-trait {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+}
+
+.gjs-trt-trait .gjs-label {
+  color: #94A3B8 !important;
+}
+
+/* Selection highlight */
+.gjs-selected {
+  outline: 2px solid #22C55E !important;
+  outline-offset: -2px;
+}
+
+.gjs-highlighter,
+.gjs-badge {
+  background-color: #22C55E !important;
+  color: #020617 !important;
+}
+
+/* Buttons */
+.gjs-pn-btn {
+  color: #94A3B8 !important;
+  border-radius: 4px !important;
+}
+
+.gjs-pn-btn:hover {
+  color: #F8FAFC !important;
+  background-color: #1E293B !important;
+}
+
+.gjs-pn-btn.gjs-pn-active {
+  color: #22C55E !important;
+  background-color: #1E293B !important;
+}
+
+/* Modal */
+.gjs-mdl-dialog {
+  background-color: #0F172A !important;
+  border: 1px solid #334155 !important;
+  border-radius: 12px !important;
+}
+
+.gjs-mdl-header {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+.gjs-mdl-title {
+  color: #F8FAFC !important;
+}
+
+.gjs-mdl-content {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+}
+
+/* Asset Manager */
+.gjs-am-assets-cont {
+  background-color: #0F172A !important;
+}
+
+.gjs-am-asset-image {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+/* RTE (Rich Text Editor) */
+.gjs-rte-toolbar {
+  background-color: #1E293B !important;
+  border: 1px solid #334155 !important;
+  border-radius: 6px !important;
+}
+
+.gjs-rte-actionbar .gjs-rte-action {
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+/* Scrollbar */
+.gjs-pn-views-container::-webkit-scrollbar,
+.gjs-blocks-cs::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gjs-pn-views-container::-webkit-scrollbar-track,
+.gjs-blocks-cs::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+
+.gjs-pn-views-container::-webkit-scrollbar-thumb,
+.gjs-blocks-cs::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+.gjs-pn-views-container::-webkit-scrollbar-thumb:hover,
+.gjs-blocks-cs::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Resizer */
+.gjs-resizer-c {
+  border-color: #22C55E !important;
+}
+
+.gjs-resizer-h {
+  border-color: #22C55E !important;
+  background-color: #22C55E !important;
+}
+
+/* Component hover */
+.gjs-comp-selected {
+  outline: 2px solid #22C55E !important;
+}
+
+/* Context menu */
+.gjs-cx-menu {
+  background-color: #1E293B !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+}
+
+.gjs-cx-menu__item {
+  color: #F8FAFC !important;
+}
+
+.gjs-cx-menu__item:hover {
+  background-color: #334155 !important;
+}
