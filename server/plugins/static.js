@@ -43,6 +43,15 @@ export default async function staticPlugin(fastify) {
   const adminDistDir = path.join(ROOT, 'admin', 'dist');
   const adminIndexPath = path.join(adminDistDir, 'index.html');
 
+  // Serve uploaded assets from /assets/imgs/
+  const uploadsDir = path.join(ROOT, 'assets', 'imgs');
+  fastify.get('/assets/imgs/*', async (request, reply) => {
+    const filename = request.url.split('?')[0].replace('/assets/imgs/', '');
+    const filePath = path.join(uploadsDir, filename);
+    if (tryServeFile(reply, filePath)) return reply;
+    return reply.code(404).send({ error: 'Not found' });
+  });
+
   // Root redirect to admin
   fastify.get('/', async (request, reply) => {
     return reply.redirect('/admin/');
