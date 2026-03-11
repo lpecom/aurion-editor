@@ -228,7 +228,8 @@ export default function GrapesEditor({ pageId, onSaveStatusChange, onEditorReady
   }, [pageId]);
 
   return (
-    <div ref={containerRef} style={{ flex: 1, position: 'relative' }}>
+    <div style={{ flex: 1, position: 'relative' }}>
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
       {isLoading && (
         <div style={{
           position: 'absolute',
@@ -240,6 +241,7 @@ export default function GrapesEditor({ pageId, onSaveStatusChange, onEditorReady
           color: '#94A3B8',
           fontSize: '0.875rem',
           zIndex: 100,
+          pointerEvents: 'none',
         }}>
           Carregando editor...
         </div>
