@@ -2,6 +2,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { getDb } from '../db/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -38,6 +39,40 @@ function tryServeFile(reply, filePath) {
   return false;
 }
 
+/**
+ * Get all page slugs associated with a domain (via page_domains or category_domains)
+ */
+function getDomainPageSlugs(domainHost) {
+  const db = getDb();
+
+  // Find the domain record
+  const domain = db.prepare('SELECT id FROM domains WHERE domain = ?').get(domainHost);
+  if (!domain) return null; // unknown domain
+
+  // Pages directly linked to this domain
+  const directPages = db.prepare(`
+    SELECT p.slug FROM pages p
+    JOIN page_domains pd ON pd.page_id = p.id
+    WHERE pd.domain_id = ? AND p.status = 'published'
+  `).all(domain.id);
+
+  // Pages inherited via category
+  const categoryPages = db.prepare(`
+    SELECT p.slug FROM pages p
+    JOIN categories c ON c.id = p.category_id
+    JOIN category_domains cd ON cd.category_id = c.id
+    WHERE cd.domain_id = ? AND p.status = 'published'
+    AND p.id NOT IN (SELECT page_id FROM page_domains)
+  `).all(domain.id);
+
+  const slugs = new Set([
+    ...directPages.map(p => p.slug),
+    ...categoryPages.map(p => p.slug),
+  ]);
+
+  return slugs;
+}
+
 export default async function staticPlugin(fastify) {
   const distDir = path.join(ROOT, 'dist');
   const adminDistDir = path.join(ROOT, 'admin', 'dist');
@@ -52,12 +87,21 @@ export default async function staticPlugin(fastify) {
     return reply.code(404).send({ error: 'Not found' });
   });
 
-  // Root redirect to admin
+  // Root — custom domains show their pages, main domain redirects to admin
   fastify.get('/', async (request, reply) => {
+    if (request.isCustomDomain) {
+      // Show first published page or a simple landing
+      const slugs = getDomainPageSlugs(request.customDomainHost);
+      if (slugs && slugs.size > 0) {
+        const firstSlug = [...slugs][0];
+        return reply.redirect(`/${firstSlug}`);
+      }
+      return reply.code(404).type('text/html').send('<h1>Site em construção</h1>');
+    }
     return reply.redirect('/admin/');
   });
 
-  // Serve admin SPA — handle all /admin/* routes manually
+  // Serve admin SPA — only on main domain (blocked by onRequest hook for custom domains)
   fastify.get('/admin', async (request, reply) => {
     return reply.redirect('/admin/');
   });
@@ -92,13 +136,33 @@ export default async function staticPlugin(fastify) {
 
     const urlPath = request.url.split('?')[0];
 
-    // Try exact file in dist/
+    // For custom domains, check if the requested slug belongs to this domain
+    if (request.isCustomDomain) {
+      const slugs = getDomainPageSlugs(request.customDomainHost);
+
+      if (!slugs) {
+        // Unknown domain
+        return reply.code(404).type('text/html').send('<h1>Domínio não configurado</h1>');
+      }
+
+      // Extract slug from URL path (e.g. /my-page → my-page)
+      const requestedSlug = urlPath.replace(/^\//, '').replace(/\/$/, '');
+
+      // Allow static assets for pages in this domain (CSS, JS, images within slug directories)
+      const topLevelDir = requestedSlug.split('/')[0];
+      if (slugs.has(topLevelDir) || slugs.has(requestedSlug)) {
+        // Serve from dist/
+        if (tryServeFile(reply, path.join(distDir, urlPath))) return reply;
+        if (tryServeFile(reply, path.join(distDir, urlPath, 'index.html'))) return reply;
+        if (tryServeFile(reply, path.join(distDir, `${urlPath}.html`))) return reply;
+      }
+
+      return reply.code(404).type('text/html').send('<h1>Página não encontrada</h1>');
+    }
+
+    // Main domain — serve any page from dist/
     if (tryServeFile(reply, path.join(distDir, urlPath))) return reply;
-
-    // Try clean URL: /slug → dist/slug/index.html
     if (tryServeFile(reply, path.join(distDir, urlPath, 'index.html'))) return reply;
-
-    // Try .html extension
     if (tryServeFile(reply, path.join(distDir, `${urlPath}.html`))) return reply;
 
     // 404 page from dist

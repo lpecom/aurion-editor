@@ -71,6 +71,33 @@ await fastify.register(multipart, {
   },
 });
 
+// Detect custom domain requests and block admin/API
+const MAIN_HOSTS = new Set([
+  'localhost',
+  '127.0.0.1',
+  'aurion-editor.up.railway.app',
+]);
+// Also accept any host set via env (e.g. ADMIN_HOST=myapp.railway.app)
+if (process.env.ADMIN_HOST) MAIN_HOSTS.add(process.env.ADMIN_HOST);
+
+fastify.addHook('onRequest', async (request, reply) => {
+  const host = (request.hostname || '').split(':')[0]; // strip port
+  if (MAIN_HOSTS.has(host)) {
+    // Main domain — allow everything
+    request.isCustomDomain = false;
+    return;
+  }
+
+  // Custom domain — only allow health check and published pages
+  request.isCustomDomain = true;
+  request.customDomainHost = host;
+
+  const url = request.url.split('?')[0];
+  if (url.startsWith('/api/') || url.startsWith('/admin')) {
+    return reply.code(404).send({ error: 'Not found' });
+  }
+});
+
 // Health check (no auth required)
 fastify.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 
