@@ -11,7 +11,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (res.status === 401) {
-    window.location.href = '/admin/login';
+    // Don't redirect on /auth/me — AuthContext handles that via .catch()
+    if (!path.startsWith('/auth/')) {
+      window.location.href = '/admin/login';
+    }
     throw new Error('Unauthorized');
   }
 

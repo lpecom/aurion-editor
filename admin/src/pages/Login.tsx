@@ -17,7 +17,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(username, password);
-      navigate('/admin');
+      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {
