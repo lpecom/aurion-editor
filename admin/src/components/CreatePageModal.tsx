@@ -61,7 +61,7 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
         category_config: {},
       });
       onClose();
-      navigate(`/admin/editor/${page.id}`);
+      navigate(`/editor/${page.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao criar página');
     } finally {

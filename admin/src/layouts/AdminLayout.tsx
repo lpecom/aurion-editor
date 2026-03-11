@@ -2,16 +2,16 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 
 const breadcrumbMap: Record<string, string> = {
-  '/admin': 'Dashboard',
-  '/admin/paginas-de-venda': 'Páginas de Venda',
-  '/admin/advertoriais': 'Advertoriais',
-  '/admin/recursos/imagens': 'Recursos / Imagens',
-  '/admin/recursos/pixels': 'Recursos / Pixels',
-  '/admin/recursos/dominios': 'Recursos / Domínios',
-  '/admin/recursos/scripts': 'Recursos / Scripts',
-  '/admin/conversion-boosters': 'Conversion Boosters',
-  '/admin/traducoes': 'Traduções',
-  '/admin/integracoes': 'Integrações',
+  '/': 'Dashboard',
+  '/paginas-de-venda': 'Páginas de Venda',
+  '/advertoriais': 'Advertoriais',
+  '/recursos/imagens': 'Recursos / Imagens',
+  '/recursos/pixels': 'Recursos / Pixels',
+  '/recursos/dominios': 'Recursos / Domínios',
+  '/recursos/scripts': 'Recursos / Scripts',
+  '/conversion-boosters': 'Conversion Boosters',
+  '/traducoes': 'Traduções',
+  '/integracoes': 'Integrações',
 };
 
 export default function AdminLayout() {

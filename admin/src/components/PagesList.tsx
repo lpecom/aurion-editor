@@ -172,7 +172,7 @@ export default function PagesList({ type }: PagesListProps) {
                 <tr key={page.id} className="hover:bg-surface-2/50 transition-colors duration-200">
                   <td className="px-5 py-3">
                     <button
-                      onClick={() => navigate(`/admin/editor/${page.id}`)}
+                      onClick={() => navigate(`/editor/${page.id}`)}
                       className="text-sm font-medium text-text hover:text-primary cursor-pointer transition-colors duration-200 text-left"
                     >
                       {page.title}
@@ -210,7 +210,7 @@ export default function PagesList({ type }: PagesListProps) {
                         <Settings className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => navigate(`/admin/editor/${page.id}`)}
+                        onClick={() => navigate(`/editor/${page.id}`)}
                         className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
                         title="Editar"
                       >

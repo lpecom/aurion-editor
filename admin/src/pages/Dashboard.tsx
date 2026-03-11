@@ -108,7 +108,7 @@ export default function Dashboard() {
             {recentPages.map((page) => (
               <button
                 key={page.id}
-                onClick={() => navigate(`/admin/editor/${page.id}`)}
+                onClick={() => navigate(`/editor/${page.id}`)}
                 className="w-full flex items-center gap-4 px-5 py-3 hover:bg-surface-2/50 cursor-pointer transition-colors duration-200 text-left"
               >
                 {page.type === 'pv' ? (
@@ -139,14 +139,14 @@ export default function Dashboard() {
         <h2 className="text-lg font-semibold text-text mb-4">Ações rápidas</h2>
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => navigate('/admin/paginas-de-venda')}
+            onClick={() => navigate('/paginas-de-venda')}
             className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
           >
             <Plus className="w-4 h-4" />
             Nova PV
           </button>
           <button
-            onClick={() => navigate('/admin/advertoriais')}
+            onClick={() => navigate('/advertoriais')}
             className="flex items-center gap-2 bg-accent text-white font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-accent/90 transition-colors duration-200"
           >
             <Plus className="w-4 h-4" />

@@ -17,13 +17,13 @@ import EditorPage from './pages/EditorPage';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/admin">
       <AuthProvider>
         <Routes>
-          <Route path="/admin/login" element={<Login />} />
+          <Route path="/login" element={<Login />} />
           {/* Editor route - full screen, no AdminLayout */}
           <Route
-            path="/admin/editor/:pageId"
+            path="/editor/:pageId"
             element={
               <AuthGuard>
                 <EditorPage />
@@ -31,7 +31,7 @@ export default function App() {
             }
           />
           <Route
-            path="/admin"
+            path="/"
             element={
               <AuthGuard>
                 <AdminLayout />

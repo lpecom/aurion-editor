@@ -28,22 +28,22 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', to: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
-  { label: 'Páginas de Venda', to: '/admin/paginas-de-venda', icon: <FileText className="w-5 h-5" /> },
-  { label: 'Advertoriais', to: '/admin/advertoriais', icon: <Newspaper className="w-5 h-5" /> },
+  { label: 'Dashboard', to: '/', icon: <LayoutDashboard className="w-5 h-5" /> },
+  { label: 'Páginas de Venda', to: '/paginas-de-venda', icon: <FileText className="w-5 h-5" /> },
+  { label: 'Advertoriais', to: '/advertoriais', icon: <Newspaper className="w-5 h-5" /> },
   {
     label: 'Recursos',
     icon: <FolderOpen className="w-5 h-5" />,
     children: [
-      { label: 'Imagens', to: '/admin/recursos/imagens', icon: <Image className="w-5 h-5" /> },
-      { label: 'Pixels', to: '/admin/recursos/pixels', icon: <Code className="w-5 h-5" /> },
-      { label: 'Domínios', to: '/admin/recursos/dominios', icon: <Globe className="w-5 h-5" /> },
-      { label: 'Scripts', to: '/admin/recursos/scripts', icon: <Terminal className="w-5 h-5" /> },
+      { label: 'Imagens', to: '/recursos/imagens', icon: <Image className="w-5 h-5" /> },
+      { label: 'Pixels', to: '/recursos/pixels', icon: <Code className="w-5 h-5" /> },
+      { label: 'Domínios', to: '/recursos/dominios', icon: <Globe className="w-5 h-5" /> },
+      { label: 'Scripts', to: '/recursos/scripts', icon: <Terminal className="w-5 h-5" /> },
     ],
   },
-  { label: 'Conversion Boosters', to: '/admin/conversion-boosters', icon: <Zap className="w-5 h-5" />, badge: 'Em breve' },
-  { label: 'Traduções', to: '/admin/traducoes', icon: <Languages className="w-5 h-5" />, badge: 'Em breve' },
-  { label: 'Integrações', to: '/admin/integracoes', icon: <Plug className="w-5 h-5" />, badge: 'Em breve' },
+  { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" />, badge: 'Em breve' },
+  { label: 'Traduções', to: '/traducoes', icon: <Languages className="w-5 h-5" />, badge: 'Em breve' },
+  { label: 'Integrações', to: '/integracoes', icon: <Plug className="w-5 h-5" />, badge: 'Em breve' },
 ];
 
 function NavItemLink({
@@ -62,7 +62,7 @@ function NavItemLink({
   return (
     <NavLink
       to={to}
-      end={to === '/admin'}
+      end={to === '/'}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors duration-200 ${
           collapsed ? 'justify-center' : ''
@@ -96,7 +96,7 @@ export default function Sidebar() {
 
   async function handleLogout() {
     await logout();
-    navigate('/admin/login');
+    navigate('/login');
   }
 
   return (
