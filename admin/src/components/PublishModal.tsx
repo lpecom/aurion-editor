@@ -450,7 +450,8 @@ export default function PublishModal({
               {step === 'category' ? (
                 <button
                   onClick={handleCategoryNext}
-                  className="flex items-center gap-1.5 px-5 py-2 text-sm font-medium bg-primary text-bg rounded-md hover:bg-primary/90 cursor-pointer transition-colors"
+                  disabled={!selectedCategoryId}
+                  className="flex items-center gap-1.5 px-5 py-2 text-sm font-medium bg-primary text-bg rounded-md hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
                 >
                   Próximo
                   <ChevronRight className="w-4 h-4" />

@@ -14,6 +14,7 @@ import domainsRoutes from './routes/domains.js';
 import scriptsRoutes from './routes/scripts.js';
 import imagesRoutes from './routes/images.js';
 import categoriesRoutes from './routes/categories.js';
+import { publishPage } from '../lib/publish.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
@@ -35,7 +36,24 @@ const loggerConfig = isProd
 const fastify = Fastify({ logger: loggerConfig });
 
 // Initialize database on startup
-getDb();
+const db = getDb();
+
+// Re-publish all published pages on startup (dist/ is ephemeral on Railway)
+async function republishOnStartup() {
+  const published = db.prepare("SELECT * FROM pages WHERE status = 'published' AND html_content IS NOT NULL").all();
+  if (published.length === 0) return;
+  console.log(`Re-publishing ${published.length} pages on startup...`);
+  for (const page of published) {
+    try {
+      await publishPage(page, db);
+      console.log(`  ✓ ${page.slug}`);
+    } catch (err) {
+      console.error(`  ✗ ${page.slug}: ${err.message}`);
+    }
+  }
+  console.log('Startup re-publish complete.');
+}
+await republishOnStartup();
 
 // Register plugins
 await fastify.register(cors, {
