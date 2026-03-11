@@ -53,6 +53,9 @@ await fastify.register(multipart, {
   },
 });
 
+// Health check (no auth required)
+fastify.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+
 // Register API routes under /api prefix
 await fastify.register(authRoutes, { prefix: '/api' });
 await fastify.register(pagesRoutes, { prefix: '/api' });
