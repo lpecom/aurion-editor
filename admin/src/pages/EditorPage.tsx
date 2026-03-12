@@ -34,67 +34,24 @@ export default function EditorPage() {
   if (!pageId) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#020617' }}>
+    <div className="flex flex-col h-screen bg-bg">
       {/* Minimal top bar */}
-      <header
-        style={{
-          height: 42,
-          background: '#0F172A',
-          borderBottom: '1px solid #334155',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 12px',
-          gap: 8,
-          flexShrink: 0,
-          zIndex: 50,
-        }}
-      >
+      <header className="h-[42px] bg-surface border-b border-border flex items-center px-4 gap-2 shrink-0 z-50">
         <button
           onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#94A3B8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '4px 6px',
-            borderRadius: 6,
-          }}
+          className="text-text-muted hover:text-text flex items-center p-1 rounded-md cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
           title="Voltar"
         >
           <ArrowLeft size={16} />
         </button>
 
-        <span
-          style={{
-            color: '#F8FAFC',
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            flex: 1,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
+        <span className="text-sm font-medium text-text flex-1 truncate">
           {page?.title || 'Carregando...'}
         </span>
 
         <button
           onClick={() => setShowPublish(true)}
-          style={{
-            background: '#22C55E',
-            border: 'none',
-            color: '#fff',
-            cursor: 'pointer',
-            padding: '5px 14px',
-            borderRadius: 6,
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
+          className="bg-primary text-bg hover:bg-primary/90 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
           title="Publicar"
         >
           <Globe size={13} />
@@ -103,7 +60,7 @@ export default function EditorPage() {
       </header>
 
       {/* Studio Editor */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div className="flex-1 overflow-hidden">
         <GrapesEditor pageId={pageId} />
       </div>
 
