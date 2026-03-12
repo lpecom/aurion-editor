@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bot, Key, Trash2, Plus, BookOpen, Activity, Loader2, Clock } from 'lucide-react';
+import { Bot, Key, Trash2, Plus, BookOpen, Activity, Loader2, Clock, Copy, Check, Terminal, Zap, ChevronRight, ExternalLink, Shield } from 'lucide-react';
 import { api } from '../lib/api';
 import ApiKeyModal from '../components/ApiKeyModal';
 
@@ -42,6 +42,294 @@ function timeAgo(dateStr: string): string {
   if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
   return `${Math.floor(diff / 86400)}d atrás`;
+}
+
+function CodeBlock({ code, label }: { code: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="relative group">
+      {label && (
+        <div className="flex items-center gap-2 bg-surface-2/80 border border-border border-b-0 rounded-t-lg px-4 py-2">
+          <Terminal className="w-3.5 h-3.5 text-text-muted" />
+          <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{label}</span>
+        </div>
+      )}
+      <div className={`relative bg-bg border border-border ${label ? 'rounded-b-lg' : 'rounded-lg'}`}>
+        <pre className="p-4 text-sm font-mono text-text-muted overflow-x-auto leading-relaxed whitespace-pre">{code}</pre>
+        <button
+          onClick={handleCopy}
+          className="absolute top-3 right-3 p-1.5 rounded-md bg-surface-2/80 border border-border text-text-muted hover:text-text opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200"
+          title="Copiar"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepNumber({ n }: { n: number }) {
+  return (
+    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary text-sm font-bold shrink-0">
+      {n}
+    </div>
+  );
+}
+
+function ToolCard({ name, desc, params }: { name: string; desc: string; params?: string }) {
+  return (
+    <div className="bg-surface-2/30 border border-border rounded-lg p-3 hover:border-primary/30 transition-colors duration-200">
+      <div className="flex items-center gap-2 mb-1">
+        <code className="text-sm font-mono font-medium text-primary">{name}</code>
+      </div>
+      <p className="text-xs text-text-muted leading-relaxed">{desc}</p>
+      {params && <p className="text-xs text-text-muted/60 mt-1 font-mono">{params}</p>}
+    </div>
+  );
+}
+
+function FaqTab() {
+  const baseUrl = window.location.origin;
+
+  const mcpConfig = JSON.stringify({
+    mcpServers: {
+      aurion: {
+        url: `${baseUrl}/api/mcp`,
+        headers: {
+          Authorization: 'Bearer SUA_API_KEY_AQUI',
+        },
+      },
+    },
+  }, null, 2);
+
+  return (
+    <div className="space-y-8">
+      {/* Hero */}
+      <div className="relative bg-gradient-to-br from-primary/10 via-surface to-surface border border-primary/20 rounded-2xl p-8 overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold uppercase tracking-wider">
+              <Zap className="w-3 h-3" />
+              MCP Integration
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-text mb-2">Conecte o Claude Code ao Aurion</h2>
+          <p className="text-text-muted max-w-2xl leading-relaxed">
+            Com a integração MCP, o Claude Code controla o Aurion diretamente: cria páginas, clona sites,
+            publica conteúdo e gerencia scripts — tudo via conversa natural no terminal.
+          </p>
+        </div>
+      </div>
+
+      {/* Setup Guide */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-text">Setup em 3 passos</h3>
+        </div>
+
+        {/* Step 1 */}
+        <div className="flex gap-4">
+          <div className="flex flex-col items-center">
+            <StepNumber n={1} />
+            <div className="w-px flex-1 bg-border mt-2" />
+          </div>
+          <div className="pb-8 flex-1">
+            <h4 className="text-text font-semibold mb-2">Crie uma API Key</h4>
+            <p className="text-sm text-text-muted mb-3">
+              Vá na aba <span className="text-primary font-medium">Status</span> e clique em{' '}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/15 text-primary text-xs font-medium">
+                <Plus className="w-3 h-3" /> Nova API Key
+              </span>
+            </p>
+            <p className="text-sm text-text-muted">
+              Escolha um nickname para identificar quem está usando (ex: <code className="px-1.5 py-0.5 rounded bg-surface-2 text-text text-xs font-mono">kaka</code>,{' '}
+              <code className="px-1.5 py-0.5 rounded bg-surface-2 text-text text-xs font-mono">deploy-bot</code>).
+              Esse nome aparece no log de atividades.
+            </p>
+          </div>
+        </div>
+
+        {/* Step 2 */}
+        <div className="flex gap-4">
+          <div className="flex flex-col items-center">
+            <StepNumber n={2} />
+            <div className="w-px flex-1 bg-border mt-2" />
+          </div>
+          <div className="pb-8 flex-1">
+            <h4 className="text-text font-semibold mb-2">Configure o MCP no Claude Code</h4>
+            <p className="text-sm text-text-muted mb-4">
+              Copie o JSON abaixo e cole no arquivo de configuração do Claude Code.
+              Substitua <code className="px-1.5 py-0.5 rounded bg-surface-2 text-text text-xs font-mono">SUA_API_KEY_AQUI</code> pela chave gerada.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-text-muted mb-2 flex items-center gap-2">
+                  <ChevronRight className="w-3 h-3" />
+                  <span className="font-medium">Claude Code (CLI)</span> — cole em <code className="px-1.5 py-0.5 rounded bg-surface-2 text-xs font-mono">~/.claude/settings.json</code>
+                </p>
+                <CodeBlock code={mcpConfig} label="settings.json" />
+              </div>
+
+              <div>
+                <p className="text-xs text-text-muted mb-2 flex items-center gap-2">
+                  <ChevronRight className="w-3 h-3" />
+                  <span className="font-medium">Claude Desktop</span> — cole em <code className="px-1.5 py-0.5 rounded bg-surface-2 text-xs font-mono">claude_desktop_config.json</code>
+                </p>
+                <CodeBlock code={mcpConfig} label="claude_desktop_config.json" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3 */}
+        <div className="flex gap-4">
+          <div className="flex flex-col items-center">
+            <StepNumber n={3} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-text font-semibold mb-2">Comece a usar</h4>
+            <p className="text-sm text-text-muted mb-1">
+              Reinicie o Claude Code e comece a dar comandos. As tools do Aurion ficam disponíveis automaticamente.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Example Prompts */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Terminal className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-text">Exemplos de uso</h3>
+        </div>
+
+        <div className="grid gap-3">
+          {[
+            {
+              prompt: 'Cria uma página de venda com título "Oferta Black Friday", slug oferta-bf, tipo pv',
+              tools: 'create_page',
+              desc: 'Cria uma página de venda como rascunho',
+            },
+            {
+              prompt: 'Clona a página https://exemplo.com como advertorial com slug meu-adv e título "Meu Advertorial"',
+              tools: 'clone_page',
+              desc: 'Scrapa o HTML da URL e salva como nova página',
+            },
+            {
+              prompt: 'Publica a página oferta-bf',
+              tools: 'get_page → publish_page',
+              desc: 'Busca pelo slug e publica em todos os domínios',
+            },
+            {
+              prompt: 'Lista todas as páginas publicadas',
+              tools: 'list_pages',
+              desc: 'Filtra por status published',
+            },
+            {
+              prompt: 'Cria um script anti-cópia chamado "Proteção V2" na posição body_end',
+              tools: 'create_script',
+              desc: 'Cria script com o código fornecido',
+            },
+            {
+              prompt: 'Faz upload dessa imagem como banner.webp',
+              tools: 'upload_image',
+              desc: 'Envia imagem em base64 para o asset manager',
+            },
+          ].map((example, i) => (
+            <div key={i} className="bg-surface border border-border rounded-lg p-4 hover:border-primary/20 transition-colors duration-200">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <ChevronRight className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-text font-medium leading-relaxed">"{example.prompt}"</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <code className="text-xs font-mono text-primary/80 bg-primary/10 px-2 py-0.5 rounded">{example.tools}</code>
+                    <span className="text-xs text-text-muted">{example.desc}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tools Reference */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Zap className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-text">Tools disponíveis</h3>
+          <span className="text-xs text-text-muted bg-surface-2 px-2 py-0.5 rounded-full">16 tools</span>
+        </div>
+
+        {/* Pages */}
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Páginas</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <ToolCard name="list_pages" desc="Lista páginas com filtros opcionais" params="type?, status?, lang?" />
+            <ToolCard name="get_page" desc="Busca uma página por ID ou slug" params="id | slug" />
+            <ToolCard name="create_page" desc="Cria uma nova página como rascunho" params="title, slug, type, html_content?, lang?" />
+            <ToolCard name="edit_page" desc="Edita campos de uma página" params="id, campos..." />
+            <ToolCard name="publish_page" desc="Publica a página nos domínios" params="id" />
+            <ToolCard name="unpublish_page" desc="Despublica a página" params="id" />
+            <ToolCard name="delete_page" desc="Deleta a página permanentemente" params="id" />
+            <ToolCard name="clone_page" desc="Clona uma página externa via scraper" params="url, title, slug, type" />
+          </div>
+        </div>
+
+        {/* Scripts */}
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Scripts</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <ToolCard name="list_scripts" desc="Lista todos os scripts" />
+            <ToolCard name="create_script" desc="Cria um novo script" params="name, position, code" />
+            <ToolCard name="edit_script" desc="Edita um script existente" params="id, campos..." />
+            <ToolCard name="delete_script" desc="Deleta um script" params="id" />
+          </div>
+        </div>
+
+        {/* Other Resources */}
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Outros Recursos</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <ToolCard name="list_pixels" desc="Lista todos os pixels configurados" />
+            <ToolCard name="list_domains" desc="Lista todos os domínios" />
+            <ToolCard name="list_images" desc="Lista todas as imagens do asset manager" />
+            <ToolCard name="upload_image" desc="Faz upload de uma imagem (base64)" params="base64, filename" />
+          </div>
+        </div>
+      </div>
+
+      {/* Tips */}
+      <div className="bg-surface border border-border rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <ExternalLink className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-text">Dicas</h3>
+        </div>
+        <ul className="space-y-3">
+          {[
+            'Cada instância do Claude Code deve ter sua própria API Key com nickname único — assim você sabe quem fez cada ação.',
+            'Todas as ações ficam registradas na aba Status. Se algo deu errado, confira o log.',
+            'Páginas criadas via MCP começam como rascunho. Use publish_page para publicar.',
+            'O clone_page scrapa o HTML da URL e salva como rascunho. O editor GrapesJS popula os dados visuais no primeiro save.',
+            'API Keys revogadas invalidam a sessão imediatamente, mas o histórico de ações é preservado.',
+          ].map((tip, i) => (
+            <li key={i} className="flex items-start gap-3 text-sm text-text-muted">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
+              <span className="leading-relaxed">{tip}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
 }
 
 export default function Claude() {
@@ -228,40 +516,7 @@ export default function Claude() {
       )}
 
       {tab === 'faq' && (
-        <div className="space-y-4">
-          {[
-            {
-              title: 'Como conectar o Claude Code ao Aurion',
-              content: `1. Vá na aba **Status** e clique em **Nova API Key**\n2. Escolha um nickname (ex: "kaka")\n3. Copie a configuração MCP gerada\n4. Adicione ao seu arquivo \`.claude/settings.json\` ou \`claude_desktop_config.json\`\n5. Reinicie o Claude Code`,
-            },
-            {
-              title: 'Como criar uma página via Claude',
-              content: `Diga ao Claude:\n\n> "Cria uma página de venda com título Oferta Black Friday, slug oferta-bf, tipo pv"\n\nO Claude vai usar a tool \`create_page\` automaticamente.`,
-            },
-            {
-              title: 'Como clonar uma página',
-              content: `Diga ao Claude:\n\n> "Clona a página https://exemplo.com como advertorial com slug meu-adv"\n\nO Claude vai usar a tool \`clone_page\` que scrapa o HTML e salva como rascunho.`,
-            },
-            {
-              title: 'Como publicar uma página',
-              content: `Diga ao Claude:\n\n> "Publica a página oferta-bf"\n\nO Claude vai usar \`get_page\` pra encontrar pelo slug e depois \`publish_page\` pra publicar.`,
-            },
-            {
-              title: 'Tools disponíveis',
-              content: `O Claude tem acesso a:\n\n- **Páginas:** list, get, create, edit, publish, unpublish, delete, clone\n- **Scripts:** list, create, edit, delete\n- **Pixels:** list\n- **Domínios:** list\n- **Imagens:** list, upload`,
-            },
-          ].map((faq, i) => (
-            <details key={i} className="bg-surface border border-border rounded-lg group">
-              <summary className="flex items-center gap-3 px-5 py-4 cursor-pointer text-text font-medium hover:bg-surface-2/50 transition-colors duration-200 rounded-lg">
-                <BookOpen className="w-4 h-4 text-primary shrink-0" />
-                {faq.title}
-              </summary>
-              <div className="px-5 pb-4 text-sm text-text-muted leading-relaxed whitespace-pre-line border-t border-border pt-3 mx-5 mb-1">
-                {faq.content}
-              </div>
-            </details>
-          ))}
-        </div>
+        <FaqTab />
       )}
 
       <ApiKeyModal
