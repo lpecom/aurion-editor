@@ -14,6 +14,7 @@ import ConversionBoosters from './pages/ConversionBoosters';
 import Translations from './pages/Translations';
 import Integrations from './pages/Integrations';
 import EditorPage from './pages/EditorPage';
+import Copier from './pages/Copier';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="paginas-de-venda" element={<SalesPages />} />
             <Route path="advertoriais" element={<Advertorials />} />
+            <Route path="copier" element={<Copier />} />
             <Route path="recursos/imagens" element={<Images />} />
             <Route path="recursos/pixels" element={<Pixels />} />
             <Route path="recursos/dominios" element={<Domains />} />
