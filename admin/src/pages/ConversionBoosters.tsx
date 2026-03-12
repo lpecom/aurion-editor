@@ -1,116 +1,185 @@
-import { useState } from 'react';
-import { Zap, Timer, MousePointerClick, Users, ArrowUpFromLine, FlaskConical, Bell } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FlaskConical, ChevronDown, ChevronRight } from 'lucide-react';
+import { api } from '../lib/api';
 import Badge from '../components/ui/Badge';
+import EmptyState from '../components/ui/EmptyState';
 
-const features = [
-  {
-    icon: Timer,
-    title: 'Countdown Timer',
-    description: 'Timer de urgência com contagem regressiva para aumentar conversões',
-    color: 'text-warning',
-    bg: 'from-warning/20 to-warning/5',
-  },
-  {
-    icon: MousePointerClick,
-    title: 'Exit Intent Popup',
-    description: 'Popup inteligente ao detectar intenção de saída do visitante',
-    color: 'text-danger',
-    bg: 'from-danger/20 to-danger/5',
-  },
-  {
-    icon: Users,
-    title: 'Social Proof',
-    description: 'Notificações em tempo real de compras recentes para gerar confiança',
-    color: 'text-accent',
-    bg: 'from-accent/20 to-accent/5',
-  },
-  {
-    icon: ArrowUpFromLine,
-    title: 'Sticky CTA Bar',
-    description: 'Barra fixa de call-to-action que acompanha o scroll do visitante',
-    color: 'text-primary',
-    bg: 'from-primary/20 to-primary/5',
-  },
-  {
-    icon: FlaskConical,
-    title: 'A/B Testing',
-    description: 'Teste variações de páginas e descubra qual converte mais',
-    color: 'text-[#8B5CF6]',
-    bg: 'from-[#8B5CF6]/20 to-[#8B5CF6]/5',
-  },
-];
+interface Page {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  variant_group: string | null;
+  variant_label: string | null;
+}
+
+interface VariantGroup {
+  name: string;
+  variants: Page[];
+}
 
 export default function ConversionBoosters() {
-  const [notifyEmail, setNotifyEmail] = useState('');
-  const [notified, setNotified] = useState(false);
+  const navigate = useNavigate();
+  const [pages, setPages] = useState<Page[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  function handleNotify(e: React.FormEvent) {
-    e.preventDefault();
-    if (notifyEmail.trim()) {
-      setNotified(true);
-      setTimeout(() => setNotified(false), 3000);
-      setNotifyEmail('');
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await api.get<Page[]>('/pages');
+        setPages(data);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Erro ao carregar páginas');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const groups = useMemo<VariantGroup[]>(() => {
+    const groupMap = new Map<string, Page[]>();
+    for (const page of pages) {
+      if (page.variant_group) {
+        const existing = groupMap.get(page.variant_group) || [];
+        existing.push(page);
+        groupMap.set(page.variant_group, existing);
+      }
     }
+    return Array.from(groupMap.entries())
+      .map(([name, variants]) => ({
+        name,
+        variants: variants.sort((a, b) => (a.variant_label || '').localeCompare(b.variant_label || '')),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [pages]);
+
+  function toggleGroup(name: string) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Hero */}
-      <div className="flex flex-col items-center text-center mb-12">
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-warning/20 to-warning/5 flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
-          <Zap className="w-10 h-10 text-warning" />
+    <div>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/10 flex items-center justify-center">
+          <FlaskConical className="w-5 h-5 text-[#8B5CF6]" />
         </div>
-        <h1 className="text-3xl font-bold text-text mb-3">Conversion Boosters</h1>
-        <p className="text-text-muted text-lg max-w-md leading-relaxed">
-          Ferramentas para aumentar conversões nas suas páginas de venda
-        </p>
+        <div>
+          <h1 className="text-2xl font-bold text-text">Testes A/B</h1>
+          <p className="text-sm text-text-muted">Gerencie variantes de páginas para testes</p>
+        </div>
       </div>
 
-      {/* Feature cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-        {features.map((feature) => (
-          <div
-            key={feature.title}
-            className="group bg-surface/80 backdrop-blur-sm border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-border/80 transition-all duration-300 hover:shadow-lg hover:shadow-black/10"
-          >
-            <div className="flex items-center justify-between">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.bg} flex items-center justify-center transition-transform duration-200 group-hover:scale-110`}>
-                <feature.icon className={`w-6 h-6 ${feature.color}`} />
+      {/* Error */}
+      {error && (
+        <div className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-md px-3 py-2 mb-4">
+          {error}
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-surface border border-border rounded-lg p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 bg-surface-2 rounded animate-pulse" />
+                <div className="h-5 w-48 bg-surface-2 rounded animate-pulse" />
+                <div className="h-5 w-16 bg-surface-2 rounded-full animate-pulse ml-auto" />
               </div>
-              <Badge>Em breve</Badge>
             </div>
-            <div>
-              <h3 className="text-text font-semibold mb-1.5">{feature.title}</h3>
-              <p className="text-text-muted text-sm leading-relaxed">{feature.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Notify section */}
-      <div className="bg-surface/80 backdrop-blur-sm border border-border rounded-xl p-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <Bell className="w-5 h-5 text-warning" />
-          <h3 className="text-text font-semibold">Quer ser notificado?</h3>
+          ))}
         </div>
-        <p className="text-text-muted text-sm mb-4">Receba um aviso quando os Conversion Boosters estiverem disponíveis.</p>
-        <form onSubmit={handleNotify} className="flex items-center gap-2 max-w-sm mx-auto">
-          <input
-            type="email"
-            value={notifyEmail}
-            onChange={(e) => setNotifyEmail(e.target.value)}
-            placeholder="seu@email.com"
-            className="flex-1 bg-surface-2 border border-border rounded-lg px-3 py-2.5 text-text text-sm placeholder:text-text-muted/50 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all duration-200"
-          />
-          <button
-            type="submit"
-            disabled={notified}
-            className="px-4 py-2.5 text-sm font-medium rounded-lg bg-primary text-bg hover:bg-primary/90 cursor-pointer transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-          >
-            {notified ? 'Inscrito!' : 'Notifique-me'}
-          </button>
-        </form>
-      </div>
+      ) : groups.length === 0 ? (
+        <EmptyState
+          icon={FlaskConical}
+          title="Nenhum teste A/B criado."
+          description="Duplique uma página para começar."
+        />
+      ) : (
+        <div className="space-y-3">
+          {groups.map((group) => {
+            const isExpanded = expandedGroups.has(group.name);
+            return (
+              <div key={group.name} className="bg-surface border border-border rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleGroup(group.name)}
+                  className="w-full flex items-center gap-3 px-5 py-4 text-left cursor-pointer hover:bg-surface-2/50 transition-colors duration-200"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-text-muted shrink-0" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-text-muted shrink-0" />
+                  )}
+                  <span className="text-sm font-semibold text-text flex-1">{group.name}</span>
+                  <Badge variant="info">{group.variants.length} variantes</Badge>
+                </button>
+
+                {isExpanded && (
+                  <div className="border-t border-border">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-surface-2/30">
+                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-2.5">Variante</th>
+                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-2.5">Título</th>
+                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-2.5">Slug</th>
+                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-2.5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {group.variants.map((variant) => (
+                          <tr
+                            key={variant.id}
+                            onClick={() => navigate(`/editor/${variant.id}`)}
+                            className="hover:bg-surface-2/50 cursor-pointer transition-colors duration-200"
+                          >
+                            <td className="px-5 py-3">
+                              <Badge variant="info">{variant.variant_label || '—'}</Badge>
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className="text-sm font-medium text-text hover:text-primary transition-colors duration-200">
+                                {variant.title}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className="text-sm text-text-muted font-mono">/{variant.slug}</span>
+                            </td>
+                            <td className="px-3 py-3">
+                              <span
+                                className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full transition-colors duration-200 ${
+                                  variant.status === 'published'
+                                    ? 'bg-primary/15 text-primary border border-primary/20'
+                                    : 'bg-warning/15 text-warning border border-warning/20'
+                                }`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${variant.status === 'published' ? 'bg-primary' : 'bg-warning'}`} />
+                                {variant.status === 'published' ? 'Publicada' : 'Rascunho'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { getDb } from '../db/index.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { publishPage, unpublishPage } from '../../lib/publish.js';
+import { translateHtml } from '../lib/translator.js';
 
 function getPageDomains(db, pageId) {
   return db.prepare(`
@@ -37,10 +38,10 @@ export default async function pagesRoutes(fastify) {
 
   // GET /api/pages — list with filters
   fastify.get('/pages', async (request, reply) => {
-    const { type, status, lang, domain } = request.query;
+    const { type, status, lang, domain, variant_group } = request.query;
     const db = getDb();
 
-    let sql = 'SELECT id, title, slug, type, lang, domain, status, frontmatter, category_config, created_at, updated_at FROM pages WHERE 1=1';
+    let sql = 'SELECT id, title, slug, type, lang, domain, status, frontmatter, category_config, variant_group, variant_label, created_at, updated_at FROM pages WHERE 1=1';
     const params = [];
 
     if (type) {
@@ -58,6 +59,10 @@ export default async function pagesRoutes(fastify) {
     if (domain) {
       sql += ' AND domain = ?';
       params.push(domain);
+    }
+    if (variant_group) {
+      sql += ' AND variant_group = ?';
+      params.push(variant_group);
     }
 
     sql += ' ORDER BY updated_at DESC';
@@ -131,6 +136,78 @@ export default async function pagesRoutes(fastify) {
       ...page,
       frontmatter: page.frontmatter ? JSON.parse(page.frontmatter) : null,
       category_config: page.category_config ? JSON.parse(page.category_config) : null,
+    });
+  });
+
+  // POST /api/pages/:id/duplicate — duplicate page as A/B variant
+  fastify.post('/pages/:id/duplicate', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['title', 'slug'],
+        properties: {
+          title: { type: 'string' },
+          slug: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const db = getDb();
+    const { id } = request.params;
+    const { title, slug } = request.body;
+
+    // 1. Fetch source page
+    const source = db.prepare('SELECT * FROM pages WHERE id = ?').get(id);
+    if (!source) {
+      return reply.code(404).send({ error: 'Page not found' });
+    }
+
+    // 2. Check slug uniqueness
+    const slugExists = db.prepare('SELECT id FROM pages WHERE slug = ?').get(slug);
+    if (slugExists) {
+      return reply.code(409).send({ error: 'Slug already exists' });
+    }
+
+    // 3. Determine variant_group
+    const variantGroup = source.variant_group || source.slug;
+
+    // 4. If source doesn't have variant_label yet, update it
+    if (!source.variant_label) {
+      db.prepare(`
+        UPDATE pages SET variant_group = ?, variant_label = 'A', updated_at = datetime('now') WHERE id = ?
+      `).run(variantGroup, id);
+    }
+
+    // 5. Count existing variants, assign next letter
+    const count = db.prepare('SELECT COUNT(*) as cnt FROM pages WHERE variant_group = ?').get(variantGroup).cnt;
+    const nextLabel = String.fromCharCode(65 + count); // 65 = 'A', so if count=1 (source with 'A'), next is 'B'
+
+    // 6. Insert new page
+    const newId = randomUUID();
+    db.prepare(`
+      INSERT INTO pages (id, title, slug, html_content, project_data, type, lang, status, category_id, category_config, frontmatter, variant_group, variant_label)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)
+    `).run(
+      newId,
+      title,
+      slug,
+      source.html_content,
+      source.project_data,
+      source.type,
+      source.lang,
+      source.category_id,
+      source.category_config,
+      source.frontmatter,
+      variantGroup,
+      nextLabel
+    );
+
+    // 7. Return new page
+    const newPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(newId);
+    reply.code(201).send({
+      ...newPage,
+      frontmatter: newPage.frontmatter ? JSON.parse(newPage.frontmatter) : null,
+      category_config: newPage.category_config ? JSON.parse(newPage.category_config) : null,
     });
   });
 
@@ -254,7 +331,7 @@ export default async function pagesRoutes(fastify) {
     // If published, unpublish first
     if (page.status === 'published') {
       try {
-        await unpublishPage(page);
+        await unpublishPage(page, db);
       } catch (err) {
         // Continue with deletion even if unpublish fails
         request.log.warn({ err }, 'Failed to unpublish page before deletion');
@@ -358,6 +435,119 @@ export default async function pagesRoutes(fastify) {
     };
   });
 
+  // POST /api/pages/:id/translate — create translation of a page
+  fastify.post('/pages/:id/translate', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['target_lang', 'provider_id'],
+        properties: {
+          target_lang: { type: 'string' },
+          provider_id: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const db = getDb();
+    const { id } = request.params;
+    const { target_lang, provider_id } = request.body;
+
+    // Fetch source page
+    const source = db.prepare('SELECT * FROM pages WHERE id = ?').get(id);
+    if (!source) {
+      return reply.code(404).send({ error: 'Page not found' });
+    }
+
+    // Check if translation already exists for this source + target_lang
+    const existingTranslation = db.prepare(
+      'SELECT id FROM pages WHERE source_page_id = ? AND lang = ?'
+    ).get(id, target_lang);
+    if (existingTranslation) {
+      return reply.code(409).send({ error: 'Translation already exists for this language' });
+    }
+
+    // Fetch provider
+    const provider = db.prepare('SELECT * FROM translation_providers WHERE id = ?').get(provider_id);
+    if (!provider) {
+      return reply.code(404).send({ error: 'Translation provider not found' });
+    }
+
+    // Translate HTML
+    let translatedHtml;
+    try {
+      translatedHtml = await translateHtml(source.html_content || '', target_lang, provider);
+    } catch (err) {
+      request.log.error({ err }, 'Translation failed');
+      return reply.code(422).send({ error: `Translation failed: ${err.message}` });
+    }
+
+    // Create new page with translation
+    const newId = randomUUID();
+    const langCode = target_lang.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const newSlug = `${source.slug}-${langCode}`;
+
+    // Check slug uniqueness, append suffix if needed
+    let finalSlug = newSlug;
+    const slugExists = db.prepare('SELECT id FROM pages WHERE slug = ?').get(finalSlug);
+    if (slugExists) {
+      finalSlug = `${newSlug}-${Date.now()}`;
+    }
+
+    db.prepare(`
+      INSERT INTO pages (id, title, slug, type, lang, html_content, project_data, category_id, category_config, frontmatter, source_page_id, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+    `).run(
+      newId,
+      source.title,
+      finalSlug,
+      source.type,
+      target_lang,
+      translatedHtml,
+      source.project_data,
+      source.category_id,
+      source.category_config,
+      source.frontmatter,
+      id
+    );
+
+    const newPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(newId);
+    reply.code(201).send({
+      ...newPage,
+      frontmatter: newPage.frontmatter ? JSON.parse(newPage.frontmatter) : null,
+      category_config: newPage.category_config ? JSON.parse(newPage.category_config) : null,
+    });
+  });
+
+  // GET /api/translations — list all translated pages
+  fastify.get('/translations', async (request) => {
+    const db = getDb();
+    const { lang, source_id } = request.query;
+
+    let sql = `
+      SELECT
+        p.id, p.title, p.slug, p.type, p.lang, p.status,
+        p.source_page_id, p.created_at, p.updated_at,
+        sp.title as source_title, sp.slug as source_slug
+      FROM pages p
+      LEFT JOIN pages sp ON sp.id = p.source_page_id
+      WHERE p.source_page_id IS NOT NULL
+    `;
+    const params = [];
+
+    if (lang) {
+      sql += ' AND p.lang = ?';
+      params.push(lang);
+    }
+    if (source_id) {
+      sql += ' AND p.source_page_id = ?';
+      params.push(source_id);
+    }
+
+    sql += ' ORDER BY p.updated_at DESC';
+
+    return db.prepare(sql).all(...params);
+  });
+
   // POST /api/pages/:id/unpublish
   fastify.post('/pages/:id/unpublish', async (request, reply) => {
     const db = getDb();
@@ -369,7 +559,7 @@ export default async function pagesRoutes(fastify) {
     }
 
     try {
-      await unpublishPage(page);
+      await unpublishPage(page, db);
 
       db.prepare("UPDATE pages SET status = 'draft', updated_at = datetime('now') WHERE id = ?").run(id);
 

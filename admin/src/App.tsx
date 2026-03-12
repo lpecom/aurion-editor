@@ -10,9 +10,11 @@ import Images from './pages/resources/Images';
 import Pixels from './pages/resources/Pixels';
 import Domains from './pages/resources/Domains';
 import Scripts from './pages/resources/Scripts';
+import Languages from './pages/resources/Languages';
+import TranslationProviders from './pages/resources/TranslationProviders';
+import CloudflareAccounts from './pages/integrations/CloudflareAccounts';
 import ConversionBoosters from './pages/ConversionBoosters';
 import Translations from './pages/Translations';
-import Integrations from './pages/Integrations';
 import EditorPage from './pages/EditorPage';
 import Copier from './pages/Copier';
 
@@ -47,9 +49,11 @@ export default function App() {
             <Route path="recursos/pixels" element={<Pixels />} />
             <Route path="recursos/dominios" element={<Domains />} />
             <Route path="recursos/scripts" element={<Scripts />} />
+            <Route path="recursos/idiomas" element={<Languages />} />
             <Route path="conversion-boosters" element={<ConversionBoosters />} />
             <Route path="traducoes" element={<Translations />} />
-            <Route path="integracoes" element={<Integrations />} />
+            <Route path="integracoes/provedores" element={<TranslationProviders />} />
+            <Route path="integracoes/cloudflare" element={<CloudflareAccounts />} />
           </Route>
         </Routes>
       </AuthProvider>

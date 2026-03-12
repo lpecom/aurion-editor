@@ -1,8 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Globe } from 'lucide-react';
+import { ArrowLeft, Globe, Copy, Languages } from 'lucide-react';
 import GrapesEditor from '../editor/GrapesEditor';
 import PublishModal from '../components/PublishModal';
+import DuplicatePageModal from '../components/DuplicatePageModal';
+import TranslatePageModal from '../components/TranslatePageModal';
 
 interface PageData {
   id: string;
@@ -18,6 +20,8 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState<PageData | null>(null);
   const [showPublish, setShowPublish] = useState(false);
+  const [showDuplicate, setShowDuplicate] = useState(false);
+  const [showTranslate, setShowTranslate] = useState(false);
 
   useEffect(() => {
     if (!pageId) return;
@@ -51,6 +55,24 @@ export default function EditorPage() {
         </span>
 
         <button
+          onClick={() => setShowTranslate(true)}
+          className="text-text-muted hover:text-text border border-border hover:bg-surface-2 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          title="Traduzir"
+        >
+          <Languages size={13} />
+          Traduzir
+        </button>
+
+        <button
+          onClick={() => setShowDuplicate(true)}
+          className="text-text-muted hover:text-text border border-border hover:bg-surface-2 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          title="Duplicar"
+        >
+          <Copy size={13} />
+          Duplicar
+        </button>
+
+        <button
           onClick={() => setShowPublish(true)}
           className="bg-primary text-bg hover:bg-primary/90 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
           title="Publicar"
@@ -73,6 +95,22 @@ export default function EditorPage() {
         pageType={page?.type || 'pv'}
         currentCategoryId={page?.category_id}
         currentSlug={page?.slug}
+      />
+
+      {/* Duplicate Modal */}
+      <DuplicatePageModal
+        open={showDuplicate}
+        onClose={() => setShowDuplicate(false)}
+        pageId={pageId}
+        pageTitle={page?.title || ''}
+      />
+
+      {/* Translate Modal */}
+      <TranslatePageModal
+        open={showTranslate}
+        onClose={() => setShowTranslate(false)}
+        pageId={pageId}
+        pageTitle={page?.title || ''}
       />
     </div>
   );

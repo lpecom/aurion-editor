@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Settings, Pencil, FileText, Newspaper } from 'lucide-react';
+import { Plus, Search, Settings, Pencil, Copy, FileText, Newspaper, Languages } from 'lucide-react';
 import { api } from '../lib/api';
 import CreatePageModal from './CreatePageModal';
+import DuplicatePageModal from './DuplicatePageModal';
+import TranslatePageModal from './TranslatePageModal';
 import PageSettingsDrawer from './PageSettingsDrawer';
 import EmptyState from './ui/EmptyState';
+import Badge from './ui/Badge';
 
 interface Page {
   id: string;
@@ -16,6 +19,8 @@ interface Page {
   status: string;
   created_at: string;
   updated_at: string;
+  variant_group: string | null;
+  variant_label: string | null;
 }
 
 interface PagesListProps {
@@ -38,6 +43,8 @@ export default function PagesList({ type }: PagesListProps) {
   const [langFilter, setLangFilter] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [settingsPageId, setSettingsPageId] = useState<string | null>(null);
+  const [duplicatePage, setDuplicatePage] = useState<{ id: string; title: string } | null>(null);
+  const [translatePage, setTranslatePage] = useState<{ id: string; title: string } | null>(null);
 
   const title = type === 'pv' ? 'Páginas de Venda' : 'Advertoriais';
   const createLabel = type === 'pv' ? 'Nova Página' : 'Novo Advertorial';
@@ -183,12 +190,17 @@ export default function PagesList({ type }: PagesListProps) {
               {filtered.map((page) => (
                 <tr key={page.id} className="hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
                   <td className="px-5 py-3">
-                    <button
-                      onClick={() => navigate(`/editor/${page.id}`)}
-                      className="text-sm font-medium text-text hover:text-primary cursor-pointer transition-colors duration-200 text-left"
-                    >
-                      {page.title}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => navigate(`/editor/${page.id}`)}
+                        className="text-sm font-medium text-text hover:text-primary cursor-pointer transition-colors duration-200 text-left"
+                      >
+                        {page.title}
+                      </button>
+                      {page.variant_label && (
+                        <Badge variant="info">{page.variant_label}</Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-3">
                     <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted">
@@ -224,6 +236,22 @@ export default function PagesList({ type }: PagesListProps) {
                         <Settings className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => setDuplicatePage({ id: page.id, title: page.title })}
+                        aria-label={`Duplicar ${page.title}`}
+                        title={`Duplicar ${page.title}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setTranslatePage({ id: page.id, title: page.title })}
+                        aria-label={`Traduzir ${page.title}`}
+                        title={`Traduzir ${page.title}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                      >
+                        <Languages className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => navigate(`/editor/${page.id}`)}
                         aria-label={`Editar ${page.title}`}
                         title={`Editar ${page.title}`}
@@ -246,6 +274,18 @@ export default function PagesList({ type }: PagesListProps) {
         onClose={() => setSettingsPageId(null)}
         pageId={settingsPageId}
         onSaved={fetchPages}
+      />
+      <DuplicatePageModal
+        open={duplicatePage !== null}
+        onClose={() => setDuplicatePage(null)}
+        pageId={duplicatePage?.id || ''}
+        pageTitle={duplicatePage?.title || ''}
+      />
+      <TranslatePageModal
+        open={translatePage !== null}
+        onClose={() => setTranslatePage(null)}
+        pageId={translatePage?.id || ''}
+        pageTitle={translatePage?.title || ''}
       />
     </div>
   );
