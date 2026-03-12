@@ -121,3 +121,22 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TEXT DEFAULT (datetime('now')),
   expires_at TEXT NOT NULL
 );
+
+-- Regras de cloaker por página
+CREATE TABLE IF NOT EXISTS page_cloaker_rules (
+  id TEXT PRIMARY KEY,
+  page_id TEXT NOT NULL UNIQUE REFERENCES pages(id) ON DELETE CASCADE,
+  enabled INTEGER DEFAULT 1,
+  action TEXT DEFAULT 'redirect',
+  redirect_url TEXT,
+  safe_page_id TEXT REFERENCES pages(id) ON DELETE SET NULL,
+  url_whitelist TEXT DEFAULT '[]',
+  countries_mode TEXT DEFAULT 'allow',
+  countries TEXT DEFAULT '[]',
+  devices_mode TEXT DEFAULT 'allow',
+  devices TEXT DEFAULT '[]',
+  browsers_mode TEXT DEFAULT 'allow',
+  browsers TEXT DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);

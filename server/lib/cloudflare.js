@@ -12,11 +12,35 @@ const WORKER_SCRIPT = `export default {
     const url = new URL(request.url);
     let slug = url.pathname.replace(/^\\/+/, '').replace(/\\/+$/, '') || 'index';
 
+    // Check cloaker rules
+    try {
+      const rulesObj = await env.BUCKET.get('_cloaker/' + slug + '.json');
+      if (rulesObj) {
+        const rules = await rulesObj.json();
+        if (rules.enabled) {
+          const blocked = checkCloakerRules(request, rules);
+          if (blocked) {
+            if (rules.action === 'redirect' && rules.redirect_url) {
+              return Response.redirect(rules.redirect_url, 302);
+            }
+            if (rules.action === 'safe_page' && rules.safe_page_slug) {
+              const safePage = await env.BUCKET.get(rules.safe_page_slug);
+              if (safePage) return new Response(safePage.body, {
+                headers: { 'content-type': 'text/html; charset=utf-8' }
+              });
+            }
+            return new Response('', { status: 403 });
+          }
+        }
+      }
+    } catch (e) {
+      // Cloaker error should not break page serving
+    }
+
     // Try exact match, then with /index
     let object = await env.BUCKET.get(slug);
     if (!object) object = await env.BUCKET.get(slug + '/index');
     if (!object) {
-      // Try 404 page
       const notFound = await env.BUCKET.get('404');
       if (notFound) return new Response(notFound.body, {
         status: 404,
@@ -37,7 +61,55 @@ const WORKER_SCRIPT = `export default {
       }
     });
   }
-};`;
+};
+
+function checkCloakerRules(request, rules) {
+  const headers = request.headers;
+
+  // Country check
+  if (rules.countries && rules.countries.length > 0) {
+    const country = headers.get('CF-IPCountry') || '';
+    const inList = rules.countries.includes(country);
+    if (rules.countries_mode === 'allow' && !inList) return true;
+    if (rules.countries_mode === 'block' && inList) return true;
+  }
+
+  // Referrer check
+  if (rules.url_whitelist && rules.url_whitelist.length > 0) {
+    let refHost = '';
+    try {
+      const referer = headers.get('Referer') || '';
+      if (referer) refHost = new URL(referer).hostname;
+    } catch (e) {}
+    const allowed = rules.url_whitelist.some(d => refHost.includes(d));
+    if (!allowed) return true;
+  }
+
+  // Device check
+  if (rules.devices && rules.devices.length > 0) {
+    const ua = headers.get('User-Agent') || '';
+    const device = /Tablet|iPad/i.test(ua) ? 'tablet'
+      : /Mobi|Android/i.test(ua) ? 'mobile' : 'desktop';
+    const inList = rules.devices.includes(device);
+    if (rules.devices_mode === 'allow' && !inList) return true;
+    if (rules.devices_mode === 'block' && inList) return true;
+  }
+
+  // Browser check
+  if (rules.browsers && rules.browsers.length > 0) {
+    const ua = headers.get('User-Agent') || '';
+    const browser = /Edg/i.test(ua) ? 'edge'
+      : /OPR|Opera/i.test(ua) ? 'opera'
+      : /Firefox/i.test(ua) ? 'firefox'
+      : /Safari/i.test(ua) && !/Chrome/i.test(ua) ? 'safari'
+      : /Chrome/i.test(ua) ? 'chrome' : 'other';
+    const inList = rules.browsers.includes(browser);
+    if (rules.browsers_mode === 'allow' && !inList) return true;
+    if (rules.browsers_mode === 'block' && inList) return true;
+  }
+
+  return false;
+}`;
 
 function headers(apiToken) {
   return {
