@@ -4,6 +4,7 @@ import { Plus, Search, Settings, Pencil, FileText, Newspaper } from 'lucide-reac
 import { api } from '../lib/api';
 import CreatePageModal from './CreatePageModal';
 import PageSettingsDrawer from './PageSettingsDrawer';
+import EmptyState from './ui/EmptyState';
 
 interface Page {
   id: string;
@@ -75,7 +76,7 @@ export default function PagesList({ type }: PagesListProps) {
         <h1 className="text-2xl font-bold text-text">{title}</h1>
         <button
           onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
+          className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
         >
           <Plus className="w-4 h-4" />
           {createLabel}
@@ -85,7 +86,7 @@ export default function PagesList({ type }: PagesListProps) {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
           <input
             type="text"
             value={search}
@@ -134,42 +135,53 @@ export default function PagesList({ type }: PagesListProps) {
                   <div className="h-4 w-48 bg-surface-2 rounded animate-pulse" />
                   <div className="h-3 w-32 bg-surface-2 rounded animate-pulse" />
                 </div>
-                <div className="h-6 w-10 bg-surface-2 rounded animate-pulse" />
-                <div className="h-6 w-16 bg-surface-2 rounded animate-pulse" />
-                <div className="h-6 w-20 bg-surface-2 rounded animate-pulse" />
+                <div className="h-5 w-10 bg-surface-2 rounded-full animate-pulse" />
+                <div className="h-5 w-16 bg-surface-2 rounded-full animate-pulse" />
+                <div className="h-5 w-20 bg-surface-2 rounded-full animate-pulse" />
               </div>
             ))}
           </div>
         </div>
       ) : pages.length === 0 ? (
         /* Empty state (no pages at all) */
-        <div className="bg-surface border border-border rounded-lg p-12 flex flex-col items-center justify-center text-center">
-          <EmptyIcon className="w-12 h-12 text-text-muted mb-3" />
-          <p className="text-text-muted">{emptyMsg}</p>
-        </div>
+        <EmptyState
+          icon={EmptyIcon}
+          title={emptyMsg}
+          description={type === 'pv' ? 'Crie sua primeira página de venda para começar.' : 'Crie seu primeiro advertorial para começar.'}
+          action={
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+            >
+              <Plus className="w-4 h-4" />
+              {createLabel}
+            </button>
+          }
+        />
       ) : filtered.length === 0 ? (
         /* No results for filter */
-        <div className="bg-surface border border-border rounded-lg p-12 flex flex-col items-center justify-center text-center">
-          <Search className="w-12 h-12 text-text-muted mb-3" />
-          <p className="text-text-muted">Nenhum resultado encontrado.</p>
-        </div>
+        <EmptyState
+          icon={Search}
+          title="Nenhum resultado encontrado"
+          description="Tente ajustar os filtros ou o termo de busca."
+        />
       ) : (
         /* Table */
         <div className="bg-surface border border-border rounded-lg overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3">Título</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3">Língua</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3">Path</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3">Domínio</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3">Status</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3">Ações</th>
+              <tr className="border-b border-border bg-surface-2/30">
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3.5">Título</th>
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Língua</th>
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Path</th>
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Domínio</th>
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Status</th>
+                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3.5">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.map((page) => (
-                <tr key={page.id} className="hover:bg-surface-2/50 transition-colors duration-200">
+                <tr key={page.id} className="hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
                   <td className="px-5 py-3">
                     <button
                       onClick={() => navigate(`/editor/${page.id}`)}
@@ -191,12 +203,13 @@ export default function PagesList({ type }: PagesListProps) {
                   </td>
                   <td className="px-3 py-3">
                     <span
-                      className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full transition-colors duration-200 ${
                         page.status === 'published'
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-warning/10 text-warning'
+                          ? 'bg-primary/15 text-primary border border-primary/20'
+                          : 'bg-warning/15 text-warning border border-warning/20'
                       }`}
                     >
+                      <span className={`w-1.5 h-1.5 rounded-full ${page.status === 'published' ? 'bg-primary' : 'bg-warning'}`} />
                       {page.status === 'published' ? 'Publicada' : 'Rascunho'}
                     </span>
                   </td>
@@ -204,15 +217,17 @@ export default function PagesList({ type }: PagesListProps) {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => setSettingsPageId(page.id)}
-                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
-                        title="Configurações"
+                        aria-label={`Configurações de ${page.title}`}
+                        title={`Configurações de ${page.title}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                       >
                         <Settings className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => navigate(`/editor/${page.id}`)}
-                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
-                        title="Editar"
+                        aria-label={`Editar ${page.title}`}
+                        title={`Editar ${page.title}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
