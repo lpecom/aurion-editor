@@ -25,7 +25,7 @@ async function request<T>(
       const res = await fetch(`${API_BASE}${path}`, {
         ...fetchOptions,
         headers: {
-          'Content-Type': 'application/json',
+          ...(fetchOptions?.body != null ? { 'Content-Type': 'application/json' } : {}),
           ...fetchOptions?.headers,
         },
         credentials: 'include',
@@ -70,8 +70,8 @@ async function request<T>(
 export const api = {
   get: <T>(path: string) => request<T>(path, { retries: 2 }),
   post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
+    request<T>(path, { method: 'POST', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) }),
   put: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+    request<T>(path, { method: 'PUT', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
