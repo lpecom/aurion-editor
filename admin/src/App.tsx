@@ -19,6 +19,8 @@ import ScriptMaker from './pages/ScriptMaker';
 import Translations from './pages/Translations';
 import EditorPage from './pages/EditorPage';
 import Copier from './pages/Copier';
+import Healthcheck from './pages/Healthcheck';
+import Claude from './pages/Claude';
 
 export default function App() {
   return (
@@ -55,6 +57,8 @@ export default function App() {
             <Route path="teste-ab" element={<ConversionBoosters />} />
             <Route path="conversion-boosters" element={<ConversionBoostersHub />} />
             <Route path="script-maker" element={<ScriptMaker />} />
+            <Route path="healthcheck" element={<Healthcheck />} />
+            <Route path="claude" element={<Claude />} />
             <Route path="traducoes" element={<Translations />} />
             <Route path="integracoes/provedores" element={<TranslationProviders />} />
             <Route path="integracoes/cloudflare" element={<CloudflareAccounts />} />

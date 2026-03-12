@@ -21,6 +21,8 @@ import {
   LayoutDashboard,
   Copy,
   Circle,
+  Activity,
+  Bot,
 } from 'lucide-react';
 
 interface NavItem {
@@ -50,6 +52,8 @@ const navItems: NavItem[] = [
   { label: 'Teste A/B', to: '/teste-ab', icon: <Zap className="w-5 h-5" /> },
   { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" /> },
   { label: 'Script Maker', to: '/script-maker', icon: <Wand2 className="w-5 h-5" /> },
+  { label: 'Healthcheck', to: '/healthcheck', icon: <Activity className="w-5 h-5" /> },
+  { label: 'Claude', to: '/claude', icon: <Bot className="w-5 h-5" /> },
   { label: 'Traduções', to: '/traducoes', icon: <Languages className="w-5 h-5" /> },
   {
     label: 'Integrações',

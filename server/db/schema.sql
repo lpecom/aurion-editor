@@ -140,3 +140,26 @@ CREATE TABLE IF NOT EXISTS page_cloaker_rules (
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
+
+-- API Keys para integração MCP (Claude Code)
+CREATE TABLE IF NOT EXISTS api_keys (
+  id TEXT PRIMARY KEY,
+  nickname TEXT NOT NULL,
+  api_key TEXT NOT NULL UNIQUE,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Log de atividades do MCP
+CREATE TABLE IF NOT EXISTS activity_log (
+  id TEXT PRIMARY KEY,
+  api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
+  nickname TEXT NOT NULL,
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT,
+  resource_name TEXT,
+  details TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_log_created_at ON activity_log(created_at);
