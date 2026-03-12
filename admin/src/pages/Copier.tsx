@@ -4,6 +4,7 @@ import { Copy, Loader2, ExternalLink, ArrowLeft, Check } from 'lucide-react';
 import { api } from '../lib/api';
 import CopierPreview from '../components/CopierPreview';
 import CopierChecklist from '../components/CopierChecklist';
+import MiniPlayer from '../components/ui/MiniPlayer';
 
 interface RemovedItem {
   id: string;
@@ -65,6 +66,7 @@ export default function Copier() {
 
   // Current state
   const [pageState, setPageState] = useState<PageState>('input');
+  const [showPlayer, setShowPlayer] = useState(false);
 
   // Slug check
   const [slugError, setSlugError] = useState('');
@@ -90,6 +92,7 @@ export default function Copier() {
     setError('');
     setPageState('loading');
     setLoadingMessage('Baixando página...');
+    setShowPlayer(true);
 
     try {
       setLoadingMessage('Scraping e processando...');
@@ -208,6 +211,14 @@ export default function Copier() {
 
   // === RENDER ===
 
+  const player = showPlayer ? (
+    <MiniPlayer
+      title="Love Sosa"
+      artist="Chief Keef"
+      src="/love-sosa.mp3"
+    />
+  ) : null;
+
   if (pageState === 'input' || pageState === 'loading') {
     return (
       <div className="max-w-xl mx-auto py-16 px-4">
@@ -258,6 +269,7 @@ export default function Copier() {
             )}
           </button>
         </form>
+        {player}
       </div>
     );
   }
@@ -374,6 +386,7 @@ export default function Copier() {
             )}
           </div>
         </div>
+        {player}
       </div>
     );
   }
@@ -403,6 +416,7 @@ export default function Copier() {
             Abrir no editor
           </button>
         </div>
+        {player}
       </div>
     );
   }
