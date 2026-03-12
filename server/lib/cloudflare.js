@@ -247,7 +247,7 @@ export async function testConnection(account) {
  */
 export async function createR2Bucket(account, bucketName) {
   return cfFetch(account.api_token, `/accounts/${account.account_id}/r2/buckets`, {
-    method: 'PUT',
+    method: 'POST',
     body: JSON.stringify({ name: bucketName }),
   });
 }
@@ -349,13 +349,14 @@ export async function deleteWorker(account, workerName) {
 /**
  * Configure a custom domain on a Worker
  */
-export async function setWorkerCustomDomain(account, workerName, domain) {
+export async function setWorkerCustomDomain(account, workerName, domain, zoneId) {
   return cfFetch(account.api_token, `/accounts/${account.account_id}/workers/domains`, {
     method: 'PUT',
     body: JSON.stringify({
       hostname: domain,
       service: workerName,
       environment: 'production',
+      zone_id: zoneId,
     }),
   });
 }
