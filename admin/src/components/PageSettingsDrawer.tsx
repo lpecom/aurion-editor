@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Save } from 'lucide-react';
+import {
+  X,
+  Save,
+  Settings,
+  Globe,
+  FileText,
+  Newspaper,
+  ChevronDown,
+  Info,
+  Code,
+} from 'lucide-react';
 import { api } from '../lib/api';
 
 interface Page {
@@ -55,6 +65,43 @@ const ADVERTORIAL_CATEGORIES = [
   'saude', 'beleza', 'financas', 'tecnologia', 'educacao', 'outros'
 ];
 
+function SectionAccordion({
+  title,
+  icon,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <section className="border border-border rounded-xl overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        className="w-full flex items-center gap-3 px-4 py-3 bg-surface-2/30 hover:bg-surface-2/60 cursor-pointer transition-all duration-200"
+      >
+        <span className="text-text-muted">{icon}</span>
+        <span className="text-sm font-semibold text-text uppercase tracking-wider">{title}</span>
+        <ChevronDown
+          className={`w-4 h-4 ml-auto text-text-muted transition-transform duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+      {isOpen && (
+        <div className="px-4 py-4 space-y-4 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: PageSettingsDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState<Page | null>(null);
@@ -64,6 +111,7 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [visible, setVisible] = useState(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -95,6 +143,9 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
   useEffect(() => {
     if (open && pageId) {
       loadData();
+      requestAnimationFrame(() => setVisible(true));
+    } else {
+      setVisible(false);
     }
   }, [open, pageId]);
 
@@ -226,71 +277,79 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
 
   if (!open) return null;
 
+  const inputClass = 'w-full bg-surface-2 border border-border rounded-lg px-3 py-2.5 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all duration-200';
+  const selectClass = `${inputClass} cursor-pointer`;
+
   return (
     <>
       {/* Overlay */}
       <div
         ref={overlayRef}
         onClick={(e) => e.target === overlayRef.current && onClose()}
-        className="fixed inset-0 z-40 bg-black/40"
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
+          visible ? 'opacity-100' : 'opacity-0'
+        }`}
       />
 
       {/* Drawer */}
       <div
-        className="fixed top-0 right-0 z-50 h-screen w-full max-w-md bg-surface border-l border-border flex flex-col"
+        className={`fixed top-0 right-0 z-50 h-screen w-full max-w-md bg-surface border-l border-border flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
+          visible ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        role="dialog"
+        aria-label="Configurações da Página"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-          <h3 className="text-lg font-semibold text-text">Configurações da Página</h3>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center">
+              <Settings className="w-4 h-4 text-text-muted" />
+            </div>
+            <h3 className="text-lg font-semibold text-text">Configurações</h3>
+          </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
+            aria-label="Fechar configurações"
+            className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
             <div className="space-y-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="h-4 w-20 bg-surface-2 rounded animate-pulse" />
-                  <div className="h-9 bg-surface-2 rounded animate-pulse" />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="border border-border rounded-xl p-4 space-y-3">
+                  <div className="h-4 w-24 bg-surface-2 rounded animate-pulse" />
+                  <div className="h-10 bg-surface-2 rounded-lg animate-pulse" />
+                  <div className="h-10 bg-surface-2 rounded-lg animate-pulse" />
                 </div>
               ))}
             </div>
           ) : (
             <>
               {error && (
-                <div className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-md px-3 py-2">
-                  {error}
+                <div className="flex items-center gap-2 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2.5">
+                  <span>{error}</span>
                 </div>
               )}
 
               {/* General Section */}
-              <section className="space-y-4">
-                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider">Geral</h4>
-
+              <SectionAccordion
+                title="Geral"
+                icon={<Settings className="w-4 h-4" />}
+                defaultOpen={true}
+              >
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-1.5">Título</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                  />
+                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-1.5">Slug</label>
-                  <input
-                    type="text"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm font-mono focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                  />
+                  <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} className={`${inputClass} font-mono`} />
                 </div>
 
                 <div>
@@ -299,28 +358,18 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200 resize-none"
+                    className={`${inputClass} resize-none`}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-1.5">OG Image</label>
-                  <input
-                    type="text"
-                    value={ogImage}
-                    onChange={(e) => setOgImage(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                  />
+                  <input type="text" value={ogImage} onChange={(e) => setOgImage(e.target.value)} placeholder="https://..." className={inputClass} />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-1.5">Língua</label>
-                  <select
-                    value={lang}
-                    onChange={(e) => setLang(e.target.value)}
-                    className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                  >
+                  <select value={lang} onChange={(e) => setLang(e.target.value)} className={selectClass}>
                     <option value="pt-BR">Português (BR)</option>
                     <option value="en">English</option>
                     <option value="es">Español</option>
@@ -329,11 +378,7 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
 
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-1.5">Categoria</label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                  >
+                  <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={selectClass}>
                     <option value="">Sem categoria</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -353,12 +398,14 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
                     {page?.status === 'published' ? 'Publicada' : 'Rascunho'}
                   </span>
                 </div>
-              </section>
+              </SectionAccordion>
 
               {/* Domains Section */}
-              <section className="space-y-4">
-                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider">Domínios da Página</h4>
-
+              <SectionAccordion
+                title="Domínios"
+                icon={<Globe className="w-4 h-4" />}
+                defaultOpen={false}
+              >
                 {domains.length === 0 ? (
                   <p className="text-sm text-text-muted">Nenhum domínio cadastrado.</p>
                 ) : (
@@ -366,18 +413,25 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
                     {domains.map((d) => {
                       const selected = selectedDomainIds.includes(d.id);
                       return (
-                        <div key={d.id} className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          key={d.id}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all duration-200 ${
+                            selected
+                              ? 'border-primary/30 bg-primary/5'
+                              : 'border-border bg-surface-2/30 hover:bg-surface-2/60'
+                          }`}
+                        >
+                          <label className="flex items-center gap-2.5 cursor-pointer flex-1">
                             <input
                               type="checkbox"
                               checked={selected}
                               onChange={() => toggleDomainSelection(d.id)}
-                              className="accent-primary cursor-pointer"
+                              className="accent-primary cursor-pointer w-4 h-4 rounded"
                             />
                             <span className="text-sm text-text">{d.domain}</span>
                           </label>
                           {selected && (
-                            <label className="flex items-center gap-1 ml-auto cursor-pointer">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
                               <input
                                 type="radio"
                                 name="primaryDomain"
@@ -395,47 +449,35 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
                 )}
 
                 {!hasPageDomains && inheritedDomains.length > 0 && (
-                  <div className="text-xs text-text-muted bg-surface-2 border border-border rounded-md px-3 py-2">
-                    Herdando domínios da categoria ({inheritedDomains.length} domínio{inheritedDomains.length !== 1 ? 's' : ''})
+                  <div className="flex items-start gap-2 text-xs bg-accent/5 border border-accent/20 rounded-lg px-3 py-2.5">
+                    <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <span className="text-text-muted">
+                      Herdando domínios da categoria ({inheritedDomains.length} domínio{inheritedDomains.length !== 1 ? 's' : ''})
+                    </span>
                   </div>
                 )}
-              </section>
+              </SectionAccordion>
 
               {/* PV-specific */}
               {page?.type === 'pv' && (
-                <section className="space-y-4">
-                  <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider">Página de Venda</h4>
-
+                <SectionAccordion
+                  title="Página de Venda"
+                  icon={<FileText className="w-4 h-4" />}
+                  defaultOpen={false}
+                >
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">Produto</label>
-                    <input
-                      type="text"
-                      value={produto}
-                      onChange={(e) => setProduto(e.target.value)}
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    />
+                    <input type="text" value={produto} onChange={(e) => setProduto(e.target.value)} className={inputClass} />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">Preço</label>
-                    <input
-                      type="number"
-                      value={preco}
-                      onChange={(e) => setPreco(e.target.value)}
-                      step="0.01"
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    />
+                    <input type="number" value={preco} onChange={(e) => setPreco(e.target.value)} step="0.01" className={inputClass} />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">Checkout URL</label>
-                    <input
-                      type="url"
-                      value={checkoutUrl}
-                      onChange={(e) => setCheckoutUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    />
+                    <input type="url" value={checkoutUrl} onChange={(e) => setCheckoutUrl(e.target.value)} placeholder="https://..." className={inputClass} />
                   </div>
 
                   <div>
@@ -445,77 +487,61 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
                         <p className="text-sm text-text-muted">Nenhum pixel cadastrado.</p>
                       ) : (
                         pixels.map((p) => (
-                          <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+                          <label
+                            key={p.id}
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200 ${
+                              selectedPixelIds.includes(p.id)
+                                ? 'border-primary/30 bg-primary/5'
+                                : 'border-border bg-surface-2/30 hover:bg-surface-2/60'
+                            }`}
+                          >
                             <input
                               type="checkbox"
                               checked={selectedPixelIds.includes(p.id)}
                               onChange={() => togglePixelSelection(p.id)}
-                              className="accent-primary cursor-pointer"
+                              className="accent-primary cursor-pointer w-4 h-4"
                             />
+                            <Code className="w-3.5 h-3.5 text-text-muted" />
                             <span className="text-sm text-text">{p.name}</span>
-                            <span className="text-xs text-text-muted">({p.type})</span>
+                            <span className="text-xs text-text-muted ml-auto">({p.type})</span>
                           </label>
                         ))
                       )}
                     </div>
                   </div>
-                </section>
+                </SectionAccordion>
               )}
 
               {/* Advertorial-specific */}
               {page?.type === 'advertorial' && (
-                <section className="space-y-4">
-                  <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider">Advertorial</h4>
-
+                <SectionAccordion
+                  title="Advertorial"
+                  icon={<Newspaper className="w-4 h-4" />}
+                  defaultOpen={false}
+                >
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">Fonte / Veículo</label>
-                    <input
-                      type="text"
-                      value={fonte}
-                      onChange={(e) => setFonte(e.target.value)}
-                      placeholder="Ex: Portal G3"
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    />
+                    <input type="text" value={fonte} onChange={(e) => setFonte(e.target.value)} placeholder="Ex: Portal G3" className={inputClass} />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">Data do artigo</label>
-                    <input
-                      type="date"
-                      value={dataArtigo}
-                      onChange={(e) => setDataArtigo(e.target.value)}
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    />
+                    <input type="date" value={dataArtigo} onChange={(e) => setDataArtigo(e.target.value)} className={selectClass} />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">Autor</label>
-                    <input
-                      type="text"
-                      value={autor}
-                      onChange={(e) => setAutor(e.target.value)}
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    />
+                    <input type="text" value={autor} onChange={(e) => setAutor(e.target.value)} className={inputClass} />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">CTA destino URL</label>
-                    <input
-                      type="url"
-                      value={ctaUrl}
-                      onChange={(e) => setCtaUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    />
+                    <input type="url" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://..." className={inputClass} />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-text-muted mb-1.5">Categoria</label>
-                    <select
-                      value={advCategoria}
-                      onChange={(e) => setAdvCategoria(e.target.value)}
-                      className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                    >
+                    <select value={advCategoria} onChange={(e) => setAdvCategoria(e.target.value)} className={selectClass}>
                       {ADVERTORIAL_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
                           {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -531,21 +557,29 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
                         <p className="text-sm text-text-muted">Nenhum pixel cadastrado.</p>
                       ) : (
                         pixels.map((p) => (
-                          <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+                          <label
+                            key={p.id}
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200 ${
+                              selectedPixelIds.includes(p.id)
+                                ? 'border-primary/30 bg-primary/5'
+                                : 'border-border bg-surface-2/30 hover:bg-surface-2/60'
+                            }`}
+                          >
                             <input
                               type="checkbox"
                               checked={selectedPixelIds.includes(p.id)}
                               onChange={() => togglePixelSelection(p.id)}
-                              className="accent-primary cursor-pointer"
+                              className="accent-primary cursor-pointer w-4 h-4"
                             />
+                            <Code className="w-3.5 h-3.5 text-text-muted" />
                             <span className="text-sm text-text">{p.name}</span>
-                            <span className="text-xs text-text-muted">({p.type})</span>
+                            <span className="text-xs text-text-muted ml-auto">({p.type})</span>
                           </label>
                         ))
                       )}
                     </div>
                   </div>
-                </section>
+                </SectionAccordion>
               )}
             </>
           )}
@@ -555,14 +589,14 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
         <div className="border-t border-border px-5 py-4 flex gap-3 shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
+            className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-border text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-bg hover:bg-primary/90 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary text-bg hover:bg-primary/90 cursor-pointer transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:ring-2 focus:ring-primary/50 focus:outline-none"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Salvando...' : 'Salvar'}
