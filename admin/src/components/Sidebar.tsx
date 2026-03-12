@@ -17,6 +17,7 @@ import {
   ChevronDown,
   LogOut,
   LayoutDashboard,
+  Copy,
 } from 'lucide-react';
 
 interface NavItem {
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: <LayoutDashboard className="w-5 h-5" /> },
   { label: 'Páginas de Venda', to: '/paginas-de-venda', icon: <FileText className="w-5 h-5" /> },
   { label: 'Advertoriais', to: '/advertoriais', icon: <Newspaper className="w-5 h-5" /> },
+  { label: 'Copier', to: '/copier', icon: <Copy className="w-5 h-5" /> },
   {
     label: 'Recursos',
     icon: <FolderOpen className="w-5 h-5" />,
