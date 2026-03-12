@@ -24,7 +24,7 @@ export const MCP_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        type: { type: 'string', enum: ['pv', 'advertorial'], description: 'Filter by page type' },
+        type: { type: 'string', enum: ['pv', 'advertorial', 'auxiliar'], description: 'Filter by page type' },
         status: { type: 'string', enum: ['draft', 'published'], description: 'Filter by status' },
         lang: { type: 'string', description: 'Filter by language code' },
       },
@@ -50,9 +50,10 @@ export const MCP_TOOLS = [
       properties: {
         title: { type: 'string' },
         slug: { type: 'string' },
-        type: { type: 'string', enum: ['pv', 'advertorial'] },
+        type: { type: 'string', enum: ['pv', 'advertorial', 'auxiliar'] },
         html_content: { type: 'string', description: 'HTML content of the page' },
         lang: { type: 'string', description: 'Language code, defaults to pt-BR' },
+        parent_page_id: { type: 'string', description: 'Parent page ID (for auxiliar type)' },
       },
     },
   },
@@ -182,6 +183,53 @@ export const MCP_TOOLS = [
       },
     },
   },
+  {
+    name: 'list_auxiliares',
+    description: 'List auxiliary pages, optionally filtered by parent page',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        parent_page_id: { type: 'string', description: 'Filter by parent page ID' },
+      },
+    },
+  },
+  {
+    name: 'create_auxiliar',
+    description: 'Create an auxiliary page (policy, terms, tracking, etc.) linked to a parent page',
+    inputSchema: {
+      type: 'object',
+      required: ['title', 'slug', 'auxiliar_type', 'parent_page_id'],
+      properties: {
+        title: { type: 'string' },
+        slug: { type: 'string' },
+        auxiliar_type: { type: 'string', enum: ['politica_privacidade', 'termos_uso', 'rastreio', 'contato', 'outro'] },
+        parent_page_id: { type: 'string', description: 'ID of the parent PV or advertorial page' },
+        html_content: { type: 'string' },
+        custom_type: { type: 'string', description: 'Custom type label when auxiliar_type is outro' },
+      },
+    },
+  },
+  {
+    name: 'list_funnels',
+    description: 'List sales funnels with optional status filter',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['draft', 'active', 'paused'] },
+      },
+    },
+  },
+  {
+    name: 'get_funnel',
+    description: 'Get funnel details including graph data',
+    inputSchema: {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'string', description: 'Funnel ID' },
+      },
+    },
+  },
 ];
 
 export async function executeTool(toolName, params, db, apiKey) {
@@ -212,6 +260,9 @@ export async function executeTool(toolName, params, db, apiKey) {
       db.prepare('INSERT INTO pages (id, title, slug, type, lang, status, html_content) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
         id, title, slug, type, lang || 'pt-BR', 'draft', html_content || null
       );
+      if (type === 'auxiliar' && params.parent_page_id) {
+        db.prepare('INSERT INTO page_parents (page_id, parent_page_id, is_primary) VALUES (?, ?, 1)').run(id, params.parent_page_id);
+      }
       logActivity(db, apiKey, 'create_page', 'page', id, title, { slug });
       return db.prepare('SELECT id, title, slug, type, status, created_at FROM pages WHERE id = ?').get(id);
     }
@@ -335,6 +386,56 @@ export async function executeTool(toolName, params, db, apiKey) {
       const result = await processAndSaveImage(buffer, params.filename, mimeType);
       logActivity(db, apiKey, 'upload_image', 'image', result.id, params.filename, null);
       return result;
+    }
+
+    case 'list_auxiliares': {
+      let sql = "SELECT * FROM pages WHERE type = 'auxiliar'";
+      const binds = [];
+      if (params.parent_page_id) {
+        sql = "SELECT p.* FROM pages p JOIN page_parents pp ON pp.page_id = p.id WHERE p.type = 'auxiliar' AND pp.parent_page_id = ?";
+        binds.push(params.parent_page_id);
+      }
+      const pages = db.prepare(sql).all(...binds);
+      logActivity(db, apiKey, 'list_auxiliares', 'page', null, null, params.parent_page_id ? { parent_page_id: params.parent_page_id } : null);
+      return { content: [{ type: 'text', text: JSON.stringify(pages) }] };
+    }
+
+    case 'create_auxiliar': {
+      const { title, slug, auxiliar_type, parent_page_id, html_content, custom_type } = params;
+      // Validate parent
+      const parent = db.prepare('SELECT id, type FROM pages WHERE id = ?').get(parent_page_id);
+      if (!parent || !['pv', 'advertorial'].includes(parent.type)) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: 'Parent must be PV or advertorial' }) }], isError: true };
+      }
+      const existing = db.prepare('SELECT id FROM pages WHERE slug = ?').get(slug);
+      if (existing) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Slug already exists' }) }], isError: true };
+
+      const id = randomUUID();
+      const frontmatter = JSON.stringify({ auxiliar_type, custom_type: custom_type || null });
+      db.prepare('INSERT INTO pages (id, title, slug, type, lang, frontmatter, html_content) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, title, slug, 'auxiliar', 'pt-BR', frontmatter, html_content || null);
+      db.prepare('INSERT INTO page_parents (page_id, parent_page_id, is_primary) VALUES (?, ?, 1)').run(id, parent_page_id);
+
+      logActivity(db, apiKey, 'create_auxiliar', 'page', id, title, { auxiliar_type, parent_page_id, slug });
+      const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(id);
+      return { content: [{ type: 'text', text: JSON.stringify(page) }] };
+    }
+
+    case 'list_funnels': {
+      let sql = 'SELECT * FROM funnels';
+      const binds = [];
+      if (params.status) { sql += ' WHERE status = ?'; binds.push(params.status); }
+      sql += ' ORDER BY created_at DESC';
+      const funnels = db.prepare(sql).all(...binds);
+      logActivity(db, apiKey, 'list_funnels', 'funnel', null, null, params.status ? { status: params.status } : null);
+      return { content: [{ type: 'text', text: JSON.stringify(funnels) }] };
+    }
+
+    case 'get_funnel': {
+      const funnel = db.prepare('SELECT * FROM funnels WHERE id = ?').get(params.id);
+      if (!funnel) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Funnel not found' }) }], isError: true };
+      funnel.graph_data = JSON.parse(funnel.graph_data);
+      logActivity(db, apiKey, 'get_funnel', 'funnel', funnel.id, funnel.name, null);
+      return { content: [{ type: 'text', text: JSON.stringify(funnel) }] };
     }
 
     default:

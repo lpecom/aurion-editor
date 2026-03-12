@@ -19,6 +19,17 @@ function getEffectiveDomains(db, page) {
   const pageDomains = getPageDomains(db, page.id);
   if (pageDomains.length > 0) return pageDomains;
 
+  // Check primary parent domains for auxiliar pages
+  const parentDomain = db.prepare(`
+    SELECT d.*, pd.is_primary, 'parent' as source
+    FROM domains d
+    JOIN page_domains pd ON pd.domain_id = d.id
+    JOIN page_parents pp ON pp.parent_page_id = pd.page_id
+    WHERE pp.page_id = ? AND pp.is_primary = 1
+    ORDER BY pd.is_primary DESC, d.domain ASC
+  `).all(page.id);
+  if (parentDomain.length > 0) return parentDomain;
+
   if (page.category_id) {
     return db.prepare(`
       SELECT d.*, cd.is_primary, 'category' as source
@@ -67,13 +78,26 @@ export default async function pagesRoutes(fastify) {
 
     sql += ' ORDER BY updated_at DESC';
 
-    const pages = db.prepare(sql).all(...params);
-    return pages.map(p => ({
+    const rawPages = db.prepare(sql).all(...params);
+    const pages = rawPages.map(p => ({
       ...p,
       frontmatter: p.frontmatter ? JSON.parse(p.frontmatter) : null,
       category_config: p.category_config ? JSON.parse(p.category_config) : null,
       domains: getEffectiveDomains(db, p),
     }));
+
+    if (type === 'auxiliar') {
+      for (const page of pages) {
+        page.parent_pages = db.prepare(`
+          SELECT p.id, p.title, p.slug, p.type, pp.is_primary
+          FROM pages p JOIN page_parents pp ON pp.parent_page_id = p.id
+          WHERE pp.page_id = ?
+          ORDER BY pp.is_primary DESC
+        `).all(page.id);
+      }
+    }
+
+    return pages;
   });
 
   // GET /api/pages/:id
@@ -101,18 +125,19 @@ export default async function pagesRoutes(fastify) {
         properties: {
           title: { type: 'string' },
           slug: { type: 'string' },
-          type: { type: 'string', enum: ['pv', 'advertorial'] },
+          type: { type: 'string', enum: ['pv', 'advertorial', 'auxiliar'] },
           lang: { type: 'string' },
           domain: { type: 'string' },
           frontmatter: { type: 'object' },
           category_config: { type: 'object' },
+          parent_page_id: { type: 'string' },
         },
       },
     },
   }, async (request, reply) => {
     const db = getDb();
     const id = randomUUID();
-    const { title, slug, type, lang, domain, frontmatter, category_config } = request.body;
+    const { title, slug, type, lang, domain, frontmatter, category_config, parent_page_id } = request.body;
 
     // Check slug uniqueness
     const existing = db.prepare('SELECT id FROM pages WHERE slug = ?').get(slug);
@@ -130,6 +155,22 @@ export default async function pagesRoutes(fastify) {
       frontmatter ? JSON.stringify(frontmatter) : null,
       category_config ? JSON.stringify(category_config) : null
     );
+
+    if (type === 'auxiliar') {
+      if (!parent_page_id) {
+        // Roll back the insert
+        db.prepare('DELETE FROM pages WHERE id = ?').run(id);
+        return reply.code(400).send({ error: 'Auxiliar pages require parent_page_id' });
+      }
+
+      const parentPage = db.prepare('SELECT id, type FROM pages WHERE id = ?').get(parent_page_id);
+      if (!parentPage || (parentPage.type !== 'pv' && parentPage.type !== 'advertorial')) {
+        db.prepare('DELETE FROM pages WHERE id = ?').run(id);
+        return reply.code(400).send({ error: 'Parent page must be PV or advertorial' });
+      }
+
+      db.prepare('INSERT INTO page_parents (page_id, parent_page_id, is_primary) VALUES (?, ?, 1)').run(id, parent_page_id);
+    }
 
     const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(id);
     reply.code(201).send({

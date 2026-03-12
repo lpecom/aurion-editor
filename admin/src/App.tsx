@@ -21,6 +21,9 @@ import EditorPage from './pages/EditorPage';
 import Copier from './pages/Copier';
 import Healthcheck from './pages/Healthcheck';
 import Claude from './pages/Claude';
+import Auxiliares from './pages/Auxiliares';
+import Funnels from './pages/Funnels';
+import FunnelEditor from './pages/FunnelEditor';
 
 export default function App() {
   return (
@@ -38,6 +41,14 @@ export default function App() {
             }
           />
           <Route
+            path="/funis/:funnelId"
+            element={
+              <AuthGuard>
+                <FunnelEditor />
+              </AuthGuard>
+            }
+          />
+          <Route
             path="/"
             element={
               <AuthGuard>
@@ -48,6 +59,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="paginas-de-venda" element={<SalesPages />} />
             <Route path="advertoriais" element={<Advertorials />} />
+            <Route path="auxiliares" element={<Auxiliares />} />
             <Route path="copier" element={<Copier />} />
             <Route path="recursos/imagens" element={<Images />} />
             <Route path="recursos/pixels" element={<Pixels />} />
@@ -56,6 +68,7 @@ export default function App() {
             <Route path="recursos/idiomas" element={<Languages />} />
             <Route path="teste-ab" element={<ConversionBoosters />} />
             <Route path="conversion-boosters" element={<ConversionBoostersHub />} />
+            <Route path="funis" element={<Funnels />} />
             <Route path="script-maker" element={<ScriptMaker />} />
             <Route path="healthcheck" element={<Healthcheck />} />
             <Route path="claude" element={<Claude />} />

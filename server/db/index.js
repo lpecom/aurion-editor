@@ -75,6 +75,12 @@ function initSchema(db) {
   if (!domainCols.includes('worker_error')) {
     db.exec("ALTER TABLE domains ADD COLUMN worker_error TEXT");
   }
+
+  // Migrations: add KV namespace to cloudflare_accounts
+  const cfCols = db.prepare("PRAGMA table_info(cloudflare_accounts)").all().map(c => c.name);
+  if (!cfCols.includes('kv_namespace_id')) {
+    db.exec("ALTER TABLE cloudflare_accounts ADD COLUMN kv_namespace_id TEXT");
+  }
 }
 
 export function closeDb() {
