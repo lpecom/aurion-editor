@@ -79,7 +79,7 @@ export default async function staticPlugin(fastify) {
   const adminIndexPath = path.join(adminDistDir, 'index.html');
 
   // Serve uploaded assets from /assets/imgs/
-  const uploadsDir = path.join(ROOT, 'assets', 'imgs');
+  const uploadsDir = process.env.UPLOAD_DIR || path.join(ROOT, 'assets', 'imgs');
   fastify.get('/assets/imgs/*', async (request, reply) => {
     const filename = request.url.split('?')[0].replace('/assets/imgs/', '');
     const filePath = path.join(uploadsDir, filename);

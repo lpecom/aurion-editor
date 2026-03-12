@@ -7,7 +7,7 @@ import { getDb } from '../db/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
-const UPLOAD_DIR = path.join(ROOT, 'assets', 'imgs');
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(ROOT, 'assets', 'imgs');
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOAD_DIR)) {
