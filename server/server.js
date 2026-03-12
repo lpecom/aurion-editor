@@ -60,25 +60,6 @@ fastify.addHook('onRequest', async (request, reply) => {
 // Health check
 fastify.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// Temporary seed endpoint — upload local DB to Railway volume
-// POST /api/seed-db with base64-encoded DB in body { db: "base64..." }
-// Remove this after seeding!
-fastify.post('/api/seed-db', async (request, reply) => {
-  const secret = request.headers['x-seed-secret'];
-  if (secret !== (process.env.SESSION_SECRET || 'default-secret-change-me')) {
-    return reply.code(403).send({ error: 'Forbidden' });
-  }
-  const { db: dbBase64 } = request.body;
-  if (!dbBase64) return reply.code(400).send({ error: 'Missing db field' });
-  const fs = await import('node:fs');
-  const dbPath = process.env.DATABASE_PATH || 'data/aurion.db';
-  const dir = (await import('node:path')).dirname(dbPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  // Close current DB before overwriting
-  closeDb();
-  fs.writeFileSync(dbPath, Buffer.from(dbBase64, 'base64'));
-  return { ok: true, size: Buffer.from(dbBase64, 'base64').length, path: dbPath };
-});
 
 // API routes
 await fastify.register(authRoutes, { prefix: '/api' });
