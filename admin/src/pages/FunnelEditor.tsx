@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Play, Pause, Loader2, Globe } from 'lucide-react';
+import {
+  applyNodeChanges,
+  applyEdgeChanges,
+  addEdge,
+  type Node,
+  type Edge,
+  type OnNodesChange,
+  type OnEdgesChange,
+  type Connection,
+} from '@xyflow/react';
 import { api } from '../lib/api';
 import FunnelCanvas from '../components/funnel/FunnelCanvas';
 import NodePalette from '../components/funnel/NodePalette';
@@ -11,21 +21,8 @@ interface Domain {
   domain: string;
 }
 
-interface FunnelNode {
-  id: string;
-  type: string;
-  position: { x: number; y: number };
-  data: Record<string, unknown>;
-}
-
-interface FunnelEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
-  label?: string;
-}
+type FunnelNode = Node;
+type FunnelEdge = Edge;
 
 interface Funnel {
   id: string;
@@ -94,7 +91,7 @@ export default function FunnelEditor() {
   // Close domain dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (domainDropdownRef.current && !domainDropdownRef.current.contains(e.target as Node)) {
+      if (domainDropdownRef.current && !domainDropdownRef.current.contains(e.target as globalThis.Node)) {
         setShowDomainDropdown(false);
       }
     }
@@ -173,17 +170,52 @@ export default function FunnelEditor() {
     [],
   );
 
-  const handleNodesChange = useCallback((changes: FunnelNode[]) => {
-    setNodes(changes);
+  const handleNodesChange: OnNodesChange = useCallback((changes) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
-  const handleEdgesChange = useCallback((changes: FunnelEdge[]) => {
-    setEdges(changes);
+  const handleEdgesChange: OnEdgesChange = useCallback((changes) => {
+    setEdges((eds) => applyEdgeChanges(changes, eds));
   }, []);
 
-  const handleNodeSelect = useCallback((nodeId: string | null) => {
-    setSelectedNodeId(nodeId);
+  const handleConnect = useCallback((connection: Connection) => {
+    setEdges((eds) => addEdge(connection, eds));
   }, []);
+
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+  }, []);
+
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const type = event.dataTransfer.getData('application/reactflow');
+      if (!type) return;
+
+      const reactFlowBounds = (event.target as HTMLElement).closest('.react-flow')?.getBoundingClientRect();
+      if (!reactFlowBounds) return;
+
+      const position = {
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      };
+
+      const newNode: FunnelNode = {
+        id: `${type}-${Date.now()}`,
+        type,
+        position,
+        data: {},
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    },
+    [],
+  );
 
   if (!funnelId) return null;
 
@@ -317,7 +349,10 @@ export default function FunnelEditor() {
             edges={edges}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
-            onNodeSelect={handleNodeSelect}
+            onConnect={handleConnect}
+            onNodeClick={handleNodeClick}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
           />
         </main>
 

@@ -1,7 +1,12 @@
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import { ExternalLink } from 'lucide-react';
 
-export default function RedirectNode({ data, selected }: NodeProps) {
+interface RedirectNodeData {
+  url?: string;
+  status_code?: number;
+}
+
+export default function RedirectNode({ data, selected }: { data: RedirectNodeData; selected?: boolean }) {
   return (
     <div className={`px-4 py-3 rounded-xl border-2 min-w-[200px] ${
       selected ? 'border-purple-400 shadow-lg shadow-purple-400/20' : 'border-purple-400/50'

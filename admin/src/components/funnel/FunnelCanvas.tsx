@@ -1,13 +1,9 @@
-import { useCallback } from 'react';
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
   BackgroundVariant,
-  useNodesState,
-  useEdgesState,
-  addEdge,
   Connection,
   Node,
   Edge,
@@ -25,10 +21,10 @@ interface FunnelCanvasProps {
   edges: Edge[];
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
-  onConnect: (connection: Connection) => void;
-  onNodeClick: (event: React.MouseEvent, node: Node) => void;
-  onDrop: (event: React.DragEvent) => void;
-  onDragOver: (event: React.DragEvent) => void;
+  onConnect?: (connection: Connection) => void;
+  onNodeClick?: (event: React.MouseEvent, node: Node) => void;
+  onDrop?: (event: React.DragEvent) => void;
+  onDragOver?: (event: React.DragEvent) => void;
 }
 
 const nodeTypes: NodeTypes = {

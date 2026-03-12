@@ -1,7 +1,13 @@
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import { FileText } from 'lucide-react';
 
-export default function PageNode({ data, selected }: NodeProps) {
+interface PageNodeData {
+  title?: string;
+  slug?: string;
+  cta_selector?: string;
+}
+
+export default function PageNode({ data, selected }: { data: PageNodeData; selected?: boolean }) {
   return (
     <div className={`px-4 py-3 rounded-xl border-2 min-w-[200px] ${
       selected ? 'border-blue-400 shadow-lg shadow-blue-400/20' : 'border-blue-400/50'
