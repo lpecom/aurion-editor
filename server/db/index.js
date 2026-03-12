@@ -54,6 +54,9 @@ function initSchema(db) {
   if (!cols.includes('variant_label')) {
     db.exec("ALTER TABLE pages ADD COLUMN variant_label TEXT");
   }
+  if (!cols.includes('source_page_id')) {
+    db.exec("ALTER TABLE pages ADD COLUMN source_page_id TEXT REFERENCES pages(id) ON DELETE SET NULL");
+  }
 }
 
 export function closeDb() {

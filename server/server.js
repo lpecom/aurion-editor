@@ -14,6 +14,8 @@ import scriptsRoutes from './routes/scripts.js';
 import imagesRoutes from './routes/images.js';
 import categoriesRoutes from './routes/categories.js';
 import copierRoutes from './routes/copier.js';
+import languagesRoutes from './routes/languages.js';
+import translationProvidersRoutes from './routes/translation-providers.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const isProd = process.env.NODE_ENV === 'production';
@@ -70,6 +72,8 @@ await fastify.register(scriptsRoutes, { prefix: '/api' });
 await fastify.register(imagesRoutes, { prefix: '/api' });
 await fastify.register(categoriesRoutes, { prefix: '/api' });
 await fastify.register(copierRoutes, { prefix: '/api' });
+await fastify.register(languagesRoutes, { prefix: '/api' });
+await fastify.register(translationProvidersRoutes, { prefix: '/api' });
 
 // Static file serving
 await fastify.register(staticPlugin);

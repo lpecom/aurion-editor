@@ -42,10 +42,12 @@ const navItems: NavItem[] = [
       { label: 'Pixels', to: '/recursos/pixels', icon: <Code className="w-5 h-5" /> },
       { label: 'Domínios', to: '/recursos/dominios', icon: <Globe className="w-5 h-5" /> },
       { label: 'Scripts', to: '/recursos/scripts', icon: <Terminal className="w-5 h-5" /> },
+      { label: 'Idiomas', to: '/recursos/idiomas', icon: <Globe className="w-5 h-5" /> },
+      { label: 'Provedores', to: '/recursos/provedores', icon: <Plug className="w-5 h-5" /> },
     ],
   },
   { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" />, badge: 'Em breve' },
-  { label: 'Traduções', to: '/traducoes', icon: <Languages className="w-5 h-5" />, badge: 'Em breve' },
+  { label: 'Traduções', to: '/traducoes', icon: <Languages className="w-5 h-5" /> },
   { label: 'Integrações', to: '/integracoes', icon: <Plug className="w-5 h-5" />, badge: 'Em breve' },
 ];
 

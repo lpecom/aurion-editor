@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { getDb } from '../db/index.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { publishPage, unpublishPage } from '../../lib/publish.js';
+import { translateHtml } from '../lib/translator.js';
 
 function getPageDomains(db, pageId) {
   return db.prepare(`
@@ -432,6 +433,119 @@ export default async function pagesRoutes(fastify) {
       category_domains: categoryDomains,
       effective_domains: pageDomains.length > 0 ? pageDomains : categoryDomains,
     };
+  });
+
+  // POST /api/pages/:id/translate — create translation of a page
+  fastify.post('/pages/:id/translate', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['target_lang', 'provider_id'],
+        properties: {
+          target_lang: { type: 'string' },
+          provider_id: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const db = getDb();
+    const { id } = request.params;
+    const { target_lang, provider_id } = request.body;
+
+    // Fetch source page
+    const source = db.prepare('SELECT * FROM pages WHERE id = ?').get(id);
+    if (!source) {
+      return reply.code(404).send({ error: 'Page not found' });
+    }
+
+    // Check if translation already exists for this source + target_lang
+    const existingTranslation = db.prepare(
+      'SELECT id FROM pages WHERE source_page_id = ? AND lang = ?'
+    ).get(id, target_lang);
+    if (existingTranslation) {
+      return reply.code(409).send({ error: 'Translation already exists for this language' });
+    }
+
+    // Fetch provider
+    const provider = db.prepare('SELECT * FROM translation_providers WHERE id = ?').get(provider_id);
+    if (!provider) {
+      return reply.code(404).send({ error: 'Translation provider not found' });
+    }
+
+    // Translate HTML
+    let translatedHtml;
+    try {
+      translatedHtml = await translateHtml(source.html_content || '', target_lang, provider);
+    } catch (err) {
+      request.log.error({ err }, 'Translation failed');
+      return reply.code(422).send({ error: `Translation failed: ${err.message}` });
+    }
+
+    // Create new page with translation
+    const newId = randomUUID();
+    const langCode = target_lang.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const newSlug = `${source.slug}-${langCode}`;
+
+    // Check slug uniqueness, append suffix if needed
+    let finalSlug = newSlug;
+    const slugExists = db.prepare('SELECT id FROM pages WHERE slug = ?').get(finalSlug);
+    if (slugExists) {
+      finalSlug = `${newSlug}-${Date.now()}`;
+    }
+
+    db.prepare(`
+      INSERT INTO pages (id, title, slug, type, lang, html_content, project_data, category_id, category_config, frontmatter, source_page_id, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+    `).run(
+      newId,
+      source.title,
+      finalSlug,
+      source.type,
+      target_lang,
+      translatedHtml,
+      source.project_data,
+      source.category_id,
+      source.category_config,
+      source.frontmatter,
+      id
+    );
+
+    const newPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(newId);
+    reply.code(201).send({
+      ...newPage,
+      frontmatter: newPage.frontmatter ? JSON.parse(newPage.frontmatter) : null,
+      category_config: newPage.category_config ? JSON.parse(newPage.category_config) : null,
+    });
+  });
+
+  // GET /api/translations — list all translated pages
+  fastify.get('/translations', async (request) => {
+    const db = getDb();
+    const { lang, source_id } = request.query;
+
+    let sql = `
+      SELECT
+        p.id, p.title, p.slug, p.type, p.lang, p.status,
+        p.source_page_id, p.created_at, p.updated_at,
+        sp.title as source_title, sp.slug as source_slug
+      FROM pages p
+      LEFT JOIN pages sp ON sp.id = p.source_page_id
+      WHERE p.source_page_id IS NOT NULL
+    `;
+    const params = [];
+
+    if (lang) {
+      sql += ' AND p.lang = ?';
+      params.push(lang);
+    }
+    if (source_id) {
+      sql += ' AND p.source_page_id = ?';
+      params.push(source_id);
+    }
+
+    sql += ' ORDER BY p.updated_at DESC';
+
+    return db.prepare(sql).all(...params);
   });
 
   // POST /api/pages/:id/unpublish

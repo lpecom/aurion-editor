@@ -87,6 +87,25 @@ CREATE TABLE IF NOT EXISTS category_domains (
   FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE
 );
 
+-- Recursos: Idiomas (para traduções)
+CREATE TABLE IF NOT EXISTS languages (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  flag TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Recursos: Provedores de tradução
+CREATE TABLE IF NOT EXISTS translation_providers (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  api_key TEXT NOT NULL,
+  model TEXT,
+  active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Sessoes (auth single-user)
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,

@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Globe, Copy } from 'lucide-react';
+import { ArrowLeft, Globe, Copy, Languages } from 'lucide-react';
 import GrapesEditor from '../editor/GrapesEditor';
 import PublishModal from '../components/PublishModal';
 import DuplicatePageModal from '../components/DuplicatePageModal';
+import TranslatePageModal from '../components/TranslatePageModal';
 
 interface PageData {
   id: string;
@@ -20,6 +21,7 @@ export default function EditorPage() {
   const [page, setPage] = useState<PageData | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
+  const [showTranslate, setShowTranslate] = useState(false);
 
   useEffect(() => {
     if (!pageId) return;
@@ -51,6 +53,15 @@ export default function EditorPage() {
         <span className="text-sm font-medium text-text flex-1 truncate">
           {page?.title || 'Carregando...'}
         </span>
+
+        <button
+          onClick={() => setShowTranslate(true)}
+          className="text-text-muted hover:text-text border border-border hover:bg-surface-2 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          title="Traduzir"
+        >
+          <Languages size={13} />
+          Traduzir
+        </button>
 
         <button
           onClick={() => setShowDuplicate(true)}
@@ -90,6 +101,14 @@ export default function EditorPage() {
       <DuplicatePageModal
         open={showDuplicate}
         onClose={() => setShowDuplicate(false)}
+        pageId={pageId}
+        pageTitle={page?.title || ''}
+      />
+
+      {/* Translate Modal */}
+      <TranslatePageModal
+        open={showTranslate}
+        onClose={() => setShowTranslate(false)}
         pageId={pageId}
         pageTitle={page?.title || ''}
       />

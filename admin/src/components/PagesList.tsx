@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Settings, Pencil, Copy, FileText, Newspaper } from 'lucide-react';
+import { Plus, Search, Settings, Pencil, Copy, FileText, Newspaper, Languages } from 'lucide-react';
 import { api } from '../lib/api';
 import CreatePageModal from './CreatePageModal';
 import DuplicatePageModal from './DuplicatePageModal';
+import TranslatePageModal from './TranslatePageModal';
 import PageSettingsDrawer from './PageSettingsDrawer';
 import EmptyState from './ui/EmptyState';
 import Badge from './ui/Badge';
@@ -43,6 +44,7 @@ export default function PagesList({ type }: PagesListProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [settingsPageId, setSettingsPageId] = useState<string | null>(null);
   const [duplicatePage, setDuplicatePage] = useState<{ id: string; title: string } | null>(null);
+  const [translatePage, setTranslatePage] = useState<{ id: string; title: string } | null>(null);
 
   const title = type === 'pv' ? 'Páginas de Venda' : 'Advertoriais';
   const createLabel = type === 'pv' ? 'Nova Página' : 'Novo Advertorial';
@@ -242,6 +244,14 @@ export default function PagesList({ type }: PagesListProps) {
                         <Copy className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => setTranslatePage({ id: page.id, title: page.title })}
+                        aria-label={`Traduzir ${page.title}`}
+                        title={`Traduzir ${page.title}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                      >
+                        <Languages className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => navigate(`/editor/${page.id}`)}
                         aria-label={`Editar ${page.title}`}
                         title={`Editar ${page.title}`}
@@ -270,6 +280,12 @@ export default function PagesList({ type }: PagesListProps) {
         onClose={() => setDuplicatePage(null)}
         pageId={duplicatePage?.id || ''}
         pageTitle={duplicatePage?.title || ''}
+      />
+      <TranslatePageModal
+        open={translatePage !== null}
+        onClose={() => setTranslatePage(null)}
+        pageId={translatePage?.id || ''}
+        pageTitle={translatePage?.title || ''}
       />
     </div>
   );
