@@ -40,9 +40,14 @@ export async function scrapeUrl(url) {
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    // Check if there's enough visible content
+    // Detect SPA shells — they have a root div and heavy JS but little content
     const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
-    if (bodyText.length >= 500) {
+    const isSpaShell = (
+      bodyText.length < 200 &&
+      ($('#app').length > 0 || $('#root').length > 0 || $('#__next').length > 0 || $('[id*="app"]').length > 0)
+    );
+
+    if (!isSpaShell && bodyText.length >= 500) {
       return { html, method: 'fetch' };
     }
 
@@ -70,8 +75,20 @@ async function scrapeWithPuppeteer(url) {
       '/usr/bin/google-chrome',
       '/usr/bin/chromium-browser',
       '/usr/bin/chromium',
+      '/nix/store/chromium/bin/chromium',       // Nixpacks
+      '/app/.apt/usr/bin/chromium',             // Railway apt
+      '/app/.apt/usr/bin/chromium-browser',
     ].filter(Boolean);
-    const executablePath = possiblePaths.find(p => existsSync(p));
+    let executablePath = possiblePaths.find(p => existsSync(p));
+
+    // If not found in known paths, try `which`
+    if (!executablePath) {
+      try {
+        const { execSync } = await import('node:child_process');
+        const found = execSync('which chromium || which chromium-browser || which google-chrome 2>/dev/null', { encoding: 'utf8' }).trim();
+        if (found) executablePath = found;
+      } catch { /* not found */ }
+    }
 
     if (!executablePath) {
       throw new Error('Chromium não encontrado no sistema. Instale o Chrome/Chromium ou defina CHROME_PATH.');

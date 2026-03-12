@@ -2,6 +2,13 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
+    "nixpacksPlan": {
+      "phases": {
+        "setup": {
+          "aptPkgs": ["chromium", "fonts-liberation", "libnss3", "libatk-bridge2.0-0", "libdrm2", "libxkbcommon0", "libgbm1"]
+        }
+      }
+    },
     "buildCommand": "npm install && cd admin && npm install && cd .. && npm run build"
   },
   "deploy": {

@@ -11,7 +11,8 @@ let db;
 export function getDb() {
   if (db) return db;
 
-  const dbPath = path.join(__dirname, '..', '..', 'data', 'aurion.db');
+  // Use DATABASE_PATH env var (for Railway volume mount) or default to local data/
+  const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', '..', 'data', 'aurion.db');
   const dataDir = path.dirname(dbPath);
 
   if (!fs.existsSync(dataDir)) {

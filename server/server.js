@@ -34,7 +34,10 @@ const loggerConfig = isProd
       },
     };
 
-const fastify = Fastify({ logger: loggerConfig });
+const fastify = Fastify({
+  logger: loggerConfig,
+  bodyLimit: 50 * 1024 * 1024, // 50MB — cloned pages can be large
+});
 
 // Initialize database on startup
 const db = getDb();
