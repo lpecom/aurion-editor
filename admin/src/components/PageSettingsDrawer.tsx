@@ -297,6 +297,7 @@ export default function PageSettingsDrawer({ open, onClose, pageId, onSaved }: P
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"
+        aria-modal="true"
         aria-label="Configurações da Página"
       >
         {/* Header */}

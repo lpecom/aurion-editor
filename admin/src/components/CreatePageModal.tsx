@@ -89,6 +89,9 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
         className={`bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl transition-all duration-300 ${
           visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'
         }`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-page-title"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-3">

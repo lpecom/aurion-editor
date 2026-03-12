@@ -41,6 +41,7 @@ export default function EditorPage() {
           onClick={() => navigate(-1)}
           className="text-text-muted hover:text-text flex items-center p-1 rounded-md cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
           title="Voltar"
+          aria-label="Voltar"
         >
           <ArrowLeft size={16} />
         </button>

@@ -74,6 +74,7 @@ export default function CopierChecklist({
           <div key={category} className="border border-border rounded-md overflow-hidden">
             <button
               onClick={() => toggleCategory(category)}
+              aria-expanded={!isCollapsed}
               className="w-full flex items-center justify-between px-3 py-2 bg-surface-2 text-sm font-medium text-text cursor-pointer hover:bg-surface-2/80 transition-colors"
             >
               <span>

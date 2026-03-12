@@ -258,7 +258,7 @@ export default function Images() {
       >
         {selected && (
           <div className="space-y-4">
-            <div className="bg-surface-2 rounded-xl overflow-hidden flex items-center justify-center" style={{ minHeight: '200px' }}>
+            <div className="bg-surface-2 rounded-xl overflow-hidden flex items-center justify-center min-h-[200px]">
               <img
                 src={`/assets/imgs/${selected.filename}`}
                 alt={selected.original_name}

@@ -230,6 +230,9 @@ export default function PublishModal({
           className={`bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden transition-all duration-300 ${
             visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'
           }`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="publish-modal-title"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
