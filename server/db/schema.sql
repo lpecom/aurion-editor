@@ -163,3 +163,30 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_activity_log_created_at ON activity_log(created_at);
+
+-- Relação parent-child de páginas auxiliares
+CREATE TABLE IF NOT EXISTS page_parents (
+  page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+  parent_page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+  is_primary INTEGER DEFAULT 0,
+  PRIMARY KEY (page_id, parent_page_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_page_parents_parent ON page_parents(parent_page_id);
+
+-- Funis de Venda
+CREATE TABLE IF NOT EXISTS funnels (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'draft',
+  graph_data TEXT NOT NULL DEFAULT '{"nodes":[],"edges":[]}',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS funnel_domains (
+  funnel_id TEXT NOT NULL REFERENCES funnels(id) ON DELETE CASCADE,
+  domain_id TEXT NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
+  PRIMARY KEY (funnel_id, domain_id)
+);

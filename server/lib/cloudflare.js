@@ -12,6 +12,95 @@ const WORKER_SCRIPT = `export default {
     const url = new URL(request.url);
     let slug = url.pathname.replace(/^\\/+/, '').replace(/\\/+$/, '') || 'index';
 
+    // Check funnel rules
+    const funnelObj = await env.BUCKET.get('_funnels/' + slug + '.json');
+    if (funnelObj) {
+      const funnel = await funnelObj.json();
+      if (funnel.status === 'active') {
+        const pageConfig = funnel.pages[slug];
+        if (pageConfig) {
+          // Get or create session cookie
+          const cookies = parseCookies(request.headers.get('Cookie') || '');
+          let sessionId = cookies['_aur_sid'];
+          const isNew = !sessionId;
+          if (!sessionId) sessionId = crypto.randomUUID();
+
+          // Determine what to serve
+          const serveSlug = pageConfig.serve_slug || slug;
+          const pageObj = await env.BUCKET.get(serveSlug);
+          if (!pageObj) return new Response('Page not found', { status: 404 });
+
+          // Apply link rewrites using HTMLRewriter
+          let response = new Response(pageObj.body, {
+            headers: { 'content-type': 'text/html; charset=utf-8' }
+          });
+
+          let rewriter = new HTMLRewriter();
+
+          // Selector-based rewrites (take priority)
+          if (pageConfig.rewrites && pageConfig.rewrites.selectors) {
+            for (const rule of pageConfig.rewrites.selectors) {
+              rewriter = rewriter.on(rule.pattern, {
+                element(el) { el.setAttribute('href', rule.href); }
+              });
+            }
+          }
+
+          // Auto rewrites for internal slug links
+          if (pageConfig.rewrites && pageConfig.rewrites.auto) {
+            for (const [oldHref, newHref] of Object.entries(pageConfig.rewrites.auto)) {
+              rewriter = rewriter.on('a[href="' + oldHref + '"]', {
+                element(el) { el.setAttribute('href', newHref); }
+              });
+              // Also match without leading slash
+              const noSlash = oldHref.replace(/^\\//, '');
+              if (noSlash !== oldHref) {
+                rewriter = rewriter.on('a[href="' + noSlash + '"]', {
+                  element(el) { el.setAttribute('href', newHref); }
+                });
+              }
+            }
+          }
+
+          // If there's a next_href and no selector rewrites, rewrite all CTA-like links
+          if (pageConfig.next_href && (!pageConfig.rewrites.selectors || pageConfig.rewrites.selectors.length === 0)) {
+            // Rewrite common CTA patterns
+            for (const sel of ['a.cta', 'a.btn', 'a.button', 'a[data-cta]']) {
+              rewriter = rewriter.on(sel, {
+                element(el) { el.setAttribute('href', pageConfig.next_href); }
+              });
+            }
+          }
+
+          response = rewriter.transform(response);
+
+          // Write lead state to KV if available
+          if (env.FUNNEL_KV) {
+            const kvKey = 'funnel:' + funnel.funnel_id + ':' + sessionId;
+            try {
+              const existing = await env.FUNNEL_KV.get(kvKey, 'json');
+              const state = existing || {
+                funnel_id: funnel.funnel_id,
+                visited: [],
+                tags: [],
+                first_seen: new Date().toISOString(),
+                last_seen: new Date().toISOString()
+              };
+              if (!state.visited.includes(slug)) state.visited.push(slug);
+              state.last_seen = new Date().toISOString();
+              await env.FUNNEL_KV.put(kvKey, JSON.stringify(state), { expirationTtl: (funnel.kv_ttl_days || 30) * 86400 });
+            } catch (e) { /* KV write failure is non-fatal */ }
+          }
+
+          // Set session cookie
+          const cookieHeader = '_aur_sid=' + sessionId + '; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000';
+          const headers = new Headers(response.headers);
+          headers.set('Set-Cookie', cookieHeader);
+          return new Response(response.body, { status: 200, headers });
+        }
+      }
+    }
+
     // Check cloaker rules
     try {
       const rulesObj = await env.BUCKET.get('_cloaker/' + slug + '.json');
@@ -62,6 +151,16 @@ const WORKER_SCRIPT = `export default {
     });
   }
 };
+
+function parseCookies(cookieStr) {
+  const cookies = {};
+  if (!cookieStr) return cookies;
+  cookieStr.split(';').forEach(pair => {
+    const [key, ...vals] = pair.trim().split('=');
+    if (key) cookies[key.trim()] = vals.join('=').trim();
+  });
+  return cookies;
+}
 
 function checkCloakerRules(request, rules) {
   const headers = request.headers;
@@ -195,15 +294,26 @@ export async function deleteFromR2(account, bucket, key) {
  * Deploy a Worker script with R2 binding
  */
 export async function deployWorker(account, workerName, scriptContent, r2BucketBinding) {
+  const bindings = [
+    {
+      type: 'r2_bucket',
+      name: 'BUCKET',
+      bucket_name: r2BucketBinding,
+    },
+  ];
+
+  // Add FUNNEL_KV binding if account has a KV namespace configured
+  if (account.kv_namespace_id) {
+    bindings.push({
+      type: 'kv_namespace',
+      name: 'FUNNEL_KV',
+      namespace_id: account.kv_namespace_id,
+    });
+  }
+
   const metadata = {
     main_module: 'worker.js',
-    bindings: [
-      {
-        type: 'r2_bucket',
-        name: 'BUCKET',
-        bucket_name: r2BucketBinding,
-      },
-    ],
+    bindings,
   };
 
   // Workers API requires multipart form data for script upload with bindings

@@ -22,6 +22,8 @@ import healthcheckRoutes from './routes/healthcheck.js';
 import apiKeysRoutes from './routes/api-keys.js';
 import activityLogRoutes from './routes/activity-log.js';
 import mcpRoutes from './routes/mcp.js';
+import pageParentsRoutes from './routes/page-parents.js';
+import funnelsRoutes from './routes/funnels.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const isProd = process.env.NODE_ENV === 'production';
@@ -87,6 +89,8 @@ await fastify.register(healthcheckRoutes, { prefix: '/api' });
 await fastify.register(apiKeysRoutes, { prefix: '/api' });
 await fastify.register(activityLogRoutes, { prefix: '/api' });
 await fastify.register(mcpRoutes, { prefix: '/api' });
+await fastify.register(pageParentsRoutes, { prefix: '/api' });
+await fastify.register(funnelsRoutes, { prefix: '/api' });
 
 // Static file serving
 await fastify.register(staticPlugin);

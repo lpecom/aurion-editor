@@ -23,6 +23,8 @@ import {
   Circle,
   Activity,
   Bot,
+  FileStack,
+  GitBranch,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,6 +39,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: <LayoutDashboard className="w-5 h-5" /> },
   { label: 'Páginas de Venda', to: '/paginas-de-venda', icon: <FileText className="w-5 h-5" /> },
   { label: 'Advertoriais', to: '/advertoriais', icon: <Newspaper className="w-5 h-5" /> },
+  { label: 'Auxiliares', to: '/auxiliares', icon: <FileStack className="w-5 h-5" /> },
   { label: 'Copier', to: '/copier', icon: <Copy className="w-5 h-5" /> },
   {
     label: 'Recursos',
@@ -51,6 +54,7 @@ const navItems: NavItem[] = [
   },
   { label: 'Teste A/B', to: '/teste-ab', icon: <Zap className="w-5 h-5" /> },
   { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" /> },
+  { label: 'Funis de Venda', to: '/funis', icon: <GitBranch className="w-5 h-5" /> },
   { label: 'Script Maker', to: '/script-maker', icon: <Wand2 className="w-5 h-5" /> },
   { label: 'Healthcheck', to: '/healthcheck', icon: <Activity className="w-5 h-5" /> },
   { label: 'Claude', to: '/claude', icon: <Bot className="w-5 h-5" /> },
