@@ -320,7 +320,7 @@ export default function PublishModal({
                   <div className="text-center py-8">
                     <FolderOpen className="w-10 h-10 text-text-muted mx-auto mb-3" />
                     <p className="text-text-muted text-sm">Nenhuma categoria encontrada.</p>
-                    <p className="text-text-muted text-xs mt-1">Você pode prosseguir sem categoria.</p>
+                    <p className="text-text-muted text-xs mt-1">Clique em "Próximo" para prosseguir sem categoria.</p>
                   </div>
                 ) : (
                   categories.map((cat) => (
@@ -522,7 +522,7 @@ export default function PublishModal({
               {step === 'category' ? (
                 <button
                   onClick={handleCategoryNext}
-                  disabled={!selectedCategoryId}
+                  disabled={loading}
                   className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium bg-primary text-bg rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                 >
                   Próximo

@@ -10,6 +10,7 @@ import {
   NodeTypes,
   OnNodesChange,
   OnEdgesChange,
+  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import EntryNode from './nodes/EntryNode';
@@ -25,6 +26,7 @@ interface FunnelCanvasProps {
   onNodeClick?: (event: React.MouseEvent, node: Node) => void;
   onDrop?: (event: React.DragEvent) => void;
   onDragOver?: (event: React.DragEvent) => void;
+  onPaneClick?: () => void;
 }
 
 const nodeTypes: NodeTypes = {
@@ -36,7 +38,13 @@ const nodeTypes: NodeTypes = {
 const defaultEdgeOptions = {
   animated: true,
   type: 'smoothstep',
-  style: { stroke: '#22c55e' },
+  style: { stroke: '#22c55e', strokeWidth: 2 },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    color: '#22c55e',
+    width: 16,
+    height: 16,
+  },
 };
 
 const canvasStyles = `
@@ -87,6 +95,7 @@ function FunnelCanvas({
   onNodeClick,
   onDrop,
   onDragOver,
+  onPaneClick,
 }: FunnelCanvasProps) {
   return (
     <div style={{ width: '100%', height: '100%' }}>
@@ -100,6 +109,7 @@ function FunnelCanvas({
         onNodeClick={onNodeClick}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         colorMode="dark"

@@ -5,6 +5,7 @@ import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
+import ResourceFolderNav from '../../components/ResourceFolderNav';
 
 interface Script {
   id: number;
@@ -49,6 +50,7 @@ export default function Scripts() {
   const [deleteTarget, setDeleteTarget] = useState<Script | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [previewScript, setPreviewScript] = useState<Script | null>(null);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   const fetchScripts = useCallback(async () => {
     try {
@@ -146,7 +148,9 @@ export default function Scripts() {
   };
 
   return (
-    <div>
+    <div className="flex -m-6 h-[calc(100vh-3.5rem)]">
+      <ResourceFolderNav selectedPageId={selectedPageId} onSelectPage={setSelectedPageId} />
+      <div className="flex-1 overflow-y-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2.5">
@@ -376,6 +380,7 @@ export default function Scripts() {
         loading={deleting}
         message={`Deseja excluir o script "${deleteTarget?.name}"? Esta acao nao pode ser desfeita.`}
       />
+      </div>
     </div>
   );
 }
