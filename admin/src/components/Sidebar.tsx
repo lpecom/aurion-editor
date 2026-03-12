@@ -43,12 +43,17 @@ const navItems: NavItem[] = [
       { label: 'Domínios', to: '/recursos/dominios', icon: <Globe className="w-5 h-5" /> },
       { label: 'Scripts', to: '/recursos/scripts', icon: <Terminal className="w-5 h-5" /> },
       { label: 'Idiomas', to: '/recursos/idiomas', icon: <Globe className="w-5 h-5" /> },
-      { label: 'Provedores', to: '/recursos/provedores', icon: <Plug className="w-5 h-5" /> },
     ],
   },
-  { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" />, badge: 'Em breve' },
+  { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" /> },
   { label: 'Traduções', to: '/traducoes', icon: <Languages className="w-5 h-5" /> },
-  { label: 'Integrações', to: '/integracoes', icon: <Plug className="w-5 h-5" />, badge: 'Em breve' },
+  {
+    label: 'Integrações',
+    icon: <Plug className="w-5 h-5" />,
+    children: [
+      { label: 'Provedores de Tradução', to: '/integracoes/provedores', icon: <Languages className="w-5 h-5" /> },
+    ],
+  },
 ];
 
 function NavItemLink({
@@ -98,7 +103,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Set<string>>(new Set());
 
   async function handleLogout() {
     await logout();
@@ -137,8 +142,13 @@ export default function Sidebar() {
             return (
               <div key={item.label}>
                 <button
-                  onClick={() => setResourcesOpen(!resourcesOpen)}
-                  aria-expanded={resourcesOpen}
+                  onClick={() => setOpenMenus(prev => {
+                    const next = new Set(prev);
+                    if (next.has(item.label)) next.delete(item.label);
+                    else next.add(item.label);
+                    return next;
+                  })}
+                  aria-expanded={openMenus.has(item.label)}
                   aria-label={collapsed ? item.label : undefined}
                   title={collapsed ? item.label : undefined}
                   className={`group flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer transition-all duration-200 text-text-muted hover:text-text hover:bg-surface-2/80 focus:ring-2 focus:ring-primary/50 focus:outline-none ${
@@ -151,13 +161,13 @@ export default function Sidebar() {
                       <span className="text-sm font-medium">{item.label}</span>
                       <ChevronDown
                         className={`w-4 h-4 ml-auto transition-transform duration-200 ${
-                          resourcesOpen ? 'rotate-180' : ''
+                          openMenus.has(item.label) ? 'rotate-180' : ''
                         }`}
                       />
                     </>
                   )}
                 </button>
-                {resourcesOpen && !collapsed && (
+                {openMenus.has(item.label) && !collapsed && (
                   <div className="ml-4 mt-1 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
                     {item.children.map((child) => (
                       <NavItemLink
