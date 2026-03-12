@@ -60,10 +60,27 @@ export async function scrapeUrl(url) {
 async function scrapeWithPuppeteer(url) {
   let browser;
   try {
-    const puppeteer = await import('puppeteer');
+    const puppeteer = await import('puppeteer-core');
+
+    // Find system Chrome/Chromium
+    const { existsSync } = await import('node:fs');
+    const possiblePaths = [
+      process.env.CHROME_PATH,
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+    ].filter(Boolean);
+    const executablePath = possiblePaths.find(p => existsSync(p));
+
+    if (!executablePath) {
+      throw new Error('Chromium não encontrado no sistema. Instale o Chrome/Chromium ou defina CHROME_PATH.');
+    }
+
     browser = await puppeteer.default.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
 
     const page = await browser.newPage();

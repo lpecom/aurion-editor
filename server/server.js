@@ -83,17 +83,24 @@ if (process.env.ADMIN_HOST) MAIN_HOSTS.add(process.env.ADMIN_HOST);
 
 fastify.addHook('onRequest', async (request, reply) => {
   const host = (request.hostname || '').split(':')[0]; // strip port
+
+  // Always allow health check (Railway internal healthcheck uses container IP, not domain)
+  const url = request.url.split('?')[0];
+  if (url === '/api/health') {
+    request.isCustomDomain = false;
+    return;
+  }
+
   if (MAIN_HOSTS.has(host)) {
     // Main domain — allow everything
     request.isCustomDomain = false;
     return;
   }
 
-  // Custom domain — only allow health check and published pages
+  // Custom domain — only allow published pages
   request.isCustomDomain = true;
   request.customDomainHost = host;
 
-  const url = request.url.split('?')[0];
   if (url.startsWith('/api/') || url.startsWith('/admin')) {
     return reply.code(404).send({ error: 'Not found' });
   }
