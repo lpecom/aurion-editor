@@ -41,15 +41,40 @@ const defaultEdgeOptions = {
 
 const canvasStyles = `
   .react-flow__node {
-    color: #e2e8f0;
+    color: #fafafa;
   }
   .react-flow__edge-path {
     stroke: #22c55e;
+    stroke-width: 2;
+  }
+  .react-flow__connection-line {
+    stroke: #22c55e;
+    stroke-width: 2;
+    stroke-dasharray: 5 5;
+  }
+  .react-flow__controls {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(39, 39, 42, 0.8);
   }
   .react-flow__controls button {
-    background: #1e1e1e;
-    color: #e2e8f0;
-    border-color: #2a2a2a;
+    background: #131316;
+    color: #a1a1aa;
+    border-color: rgba(39, 39, 42, 0.5);
+    width: 32px;
+    height: 32px;
+    transition: all 0.15s ease;
+  }
+  .react-flow__controls button:hover {
+    background: #1c1c21;
+    color: #fafafa;
+  }
+  .react-flow__minimap {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(39, 39, 42, 0.8);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   }
 `;
 
@@ -85,12 +110,12 @@ function FunnelCanvas({
       >
         <MiniMap
           position="bottom-right"
-          style={{ background: '#1e1e1e' }}
-          maskColor="rgba(0, 0, 0, 0.6)"
+          style={{ background: '#131316' }}
+          maskColor="rgba(0, 0, 0, 0.7)"
           nodeColor="#22c55e"
         />
         <Controls />
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(161, 161, 170, 0.15)" />
       </ReactFlow>
     </div>
   );

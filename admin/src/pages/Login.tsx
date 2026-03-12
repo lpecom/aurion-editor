@@ -27,16 +27,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center px-4 bg-[radial-gradient(ellipse_at_center,_var(--color-surface)_0%,_var(--color-bg)_70%)]">
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(34,197,94,0.08)_0%,transparent_50%)]" />
       <div className="w-full max-w-sm animate-fade-in">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary tracking-tight drop-shadow-[0_0_24px_rgba(34,197,94,0.3)]">
+          <h1 className="text-3xl font-bold text-primary tracking-tight drop-shadow-[0_0_30px_rgba(34,197,94,0.25)]">
             Aurion
           </h1>
           <p className="text-text-muted mt-2 text-sm">Painel de administração</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border/50 rounded-2xl p-7 space-y-5 shadow-2xl shadow-black/20 relative">
           {error && (
             <div className="bg-danger/10 border border-danger/30 text-danger text-sm rounded-md px-3 py-2 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -55,7 +56,7 @@ export default function Login() {
               onChange={(e) => setUsername(e.target.value)}
               required
               autoFocus
-              className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+              className="w-full bg-surface-2/50 border border-border/50 rounded-xl px-3 py-2 text-text placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
               placeholder="admin"
             />
           </div>
@@ -71,7 +72,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 pr-10 text-text placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                className="w-full bg-surface-2/50 border border-border/50 rounded-xl px-3 py-2 pr-10 text-text placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
                 placeholder="••••••••"
               />
               <button
@@ -89,7 +90,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-bg font-medium rounded-md px-4 py-2 flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            className="w-full bg-primary text-bg font-medium rounded-xl px-4 py-2 flex items-center justify-center gap-2 cursor-pointer hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-lg shadow-primary/20"
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

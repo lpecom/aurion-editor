@@ -82,7 +82,7 @@ export default function NodeProperties({ selectedNode, onNodeUpdate }: NodePrope
   if (!selectedNode) {
     return (
       <div className="p-4 flex items-center justify-center h-full">
-        <p className="text-sm text-text-muted text-center">
+        <p className="text-xs text-zinc-500 text-center leading-relaxed">
           Selecione um elemento no canvas para editar suas propriedades.
         </p>
       </div>
@@ -106,7 +106,7 @@ export default function NodeProperties({ selectedNode, onNodeUpdate }: NodePrope
       {/* Header */}
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-text-muted" />
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+        <h3 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest">
           {NODE_LABELS[nodeType] ?? 'Nó'}
         </h3>
       </div>

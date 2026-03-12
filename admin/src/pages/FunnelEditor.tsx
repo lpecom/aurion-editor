@@ -237,7 +237,7 @@ export default function FunnelEditor() {
   return (
     <div className="flex flex-col h-screen bg-bg">
       {/* Top toolbar */}
-      <header className="h-14 bg-surface border-b border-border flex items-center px-4 gap-4 shrink-0 z-50">
+      <header className="h-12 bg-surface/95 backdrop-blur-xl border-b border-border/50 flex items-center px-4 gap-3 shrink-0 z-50">
         <button
           onClick={() => navigate('/admin/funis')}
           className="text-text-muted hover:text-text p-1.5 rounded-md cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -338,12 +338,12 @@ export default function FunnelEditor() {
       {/* Main area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel — Node Palette */}
-        <aside className="w-56 bg-surface border-r border-border overflow-y-auto shrink-0">
+        <aside className="w-56 bg-surface/95 backdrop-blur-xl border-r border-border/50 overflow-y-auto shrink-0">
           <NodePalette />
         </aside>
 
         {/* Center — Canvas */}
-        <main className="flex-1 bg-bg overflow-hidden">
+        <main className="flex-1 bg-[#09090b] overflow-hidden">
           <FunnelCanvas
             nodes={nodes}
             edges={edges}
@@ -357,7 +357,7 @@ export default function FunnelEditor() {
         </main>
 
         {/* Right panel — Node Properties */}
-        <aside className="w-72 bg-surface border-l border-border overflow-y-auto shrink-0">
+        <aside className="w-72 bg-surface/95 backdrop-blur-xl border-l border-border/50 overflow-y-auto shrink-0">
           <NodeProperties
             selectedNode={selectedNode}
             onNodeUpdate={handleNodeUpdate}

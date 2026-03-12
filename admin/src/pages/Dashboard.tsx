@@ -73,10 +73,10 @@ export default function Dashboard() {
         {cards.map((card) => (
           <div
             key={card.label}
-            className="bg-surface border border-border rounded-lg p-5 flex items-center gap-4 hover:border-primary/20 transition-colors duration-200 bg-gradient-to-br relative overflow-hidden"
+            className="bg-surface border border-border/50 rounded-2xl p-5 flex items-center gap-4 hover:border-border-hover transition-all duration-200 relative overflow-hidden card-hover"
           >
             <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} pointer-events-none`} />
-            <div className={`relative w-12 h-12 rounded-xl bg-surface-2 flex items-center justify-center ${card.color}`}>
+            <div className={`relative w-11 h-11 rounded-xl bg-surface-2/80 flex items-center justify-center ${card.color}`}>
               {card.icon}
             </div>
             <div className="relative">
@@ -98,7 +98,7 @@ export default function Dashboard() {
         <h2 className="text-lg font-semibold text-text mb-1">Últimas editadas</h2>
         <p className="text-sm text-text-muted mb-4">Páginas atualizadas recentemente.</p>
         {loading ? (
-          <div className="bg-surface border border-border rounded-lg divide-y divide-border">
+          <div className="bg-surface border border-border/50 rounded-2xl divide-y divide-border/50 overflow-hidden">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-5 py-3">
                 <div className="h-4 w-48 rounded animate-shimmer" />
@@ -107,13 +107,13 @@ export default function Dashboard() {
             ))}
           </div>
         ) : recentPages.length === 0 ? (
-          <div className="bg-surface border border-border rounded-lg p-10 text-center">
+          <div className="bg-surface border border-border/50 rounded-2xl p-10 text-center">
             <Inbox className="w-10 h-10 text-text-muted/40 mx-auto mb-3" />
             <p className="text-text-muted font-medium">Nenhuma página criada ainda.</p>
             <p className="text-text-muted/60 text-sm mt-1">Comece criando uma PV ou Advertorial.</p>
           </div>
         ) : (
-          <div className="bg-surface border border-border rounded-lg divide-y divide-border">
+          <div className="bg-surface border border-border/50 rounded-2xl divide-y divide-border/50 overflow-hidden">
             {recentPages.map((page) => (
               <button
                 key={page.id}
@@ -153,14 +153,14 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => navigate('/paginas-de-venda')}
-            className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
+            className="flex items-center gap-2 bg-primary text-bg font-medium rounded-xl px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
           >
             <Plus className="w-4 h-4" />
             Nova PV
           </button>
           <button
             onClick={() => navigate('/advertoriais')}
-            className="flex items-center gap-2 bg-accent text-white font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-accent/90 transition-colors duration-200"
+            className="flex items-center gap-2 bg-accent text-white font-medium rounded-xl px-4 py-2 cursor-pointer hover:bg-accent/90 transition-colors duration-200"
           >
             <Plus className="w-4 h-4" />
             Novo Advertorial

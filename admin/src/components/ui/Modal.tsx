@@ -44,9 +44,9 @@ export default function Modal({ open, onClose, title, children, footer, maxWidth
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`w-full ${maxWidth} bg-surface border border-border rounded-lg shadow-xl flex flex-col max-h-[90vh] cursor-default animate-in zoom-in-95 fade-in duration-200`}
+        className={`w-full ${maxWidth} bg-surface border border-border/50 rounded-2xl shadow-2xl shadow-black/20 flex flex-col max-h-[90vh] cursor-default animate-in zoom-in-95 fade-in duration-200`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
           <h2 id={titleId} className="text-lg font-semibold text-text">{title}</h2>
           <button
             onClick={onClose}
@@ -58,7 +58,7 @@ export default function Modal({ open, onClose, title, children, footer, maxWidth
         </div>
         <div className="px-6 py-4 overflow-y-auto flex-1">{children}</div>
         {footer && (
-          <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-3">
+          <div className="px-6 py-4 border-t border-border/50 flex items-center justify-end gap-3">
             {footer}
           </div>
         )}

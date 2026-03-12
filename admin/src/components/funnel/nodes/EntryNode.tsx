@@ -7,15 +7,19 @@ interface EntryNodeData {
 
 export default function EntryNode({ data, selected }: { data: EntryNodeData; selected?: boolean }) {
   return (
-    <div className={`px-4 py-3 rounded-xl border-2 min-w-[180px] ${
-      selected ? 'border-green-400 shadow-lg shadow-green-400/20' : 'border-green-400/50'
-    } bg-green-400/10`}>
-      <div className="flex items-center gap-2">
-        <Play className="w-4 h-4 text-green-400" />
-        <span className="text-sm font-semibold text-green-400">Entrada</span>
+    <div className={`px-4 py-3 rounded-xl border min-w-[180px] backdrop-blur-sm transition-all duration-200 ${
+      selected
+        ? 'border-emerald-500 shadow-[0_0_24px_rgba(34,197,94,0.2)] bg-emerald-500/10'
+        : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
+    }`}>
+      <div className="flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+          <Play className="w-3.5 h-3.5 text-emerald-400" />
+        </div>
+        <span className="text-sm font-semibold text-emerald-400">Entrada</span>
       </div>
-      <p className="text-xs text-text-muted mt-1 font-mono">/{data.entry_slug || '...'}</p>
-      <Handle type="source" position={Position.Right} className="!bg-green-400 !w-3 !h-3 !border-2 !border-green-400/50" />
+      <p className="text-xs text-zinc-400 mt-2 font-mono">/{data.entry_slug || '...'}</p>
+      <Handle type="source" position={Position.Right} className="!bg-emerald-500 !w-3 !h-3 !border-2 !border-emerald-500/30" />
     </div>
   );
 }

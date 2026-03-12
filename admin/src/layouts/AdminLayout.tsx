@@ -24,7 +24,7 @@ export default function AdminLayout() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-14 border-b border-border bg-surface flex items-center px-6 shrink-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.2)]">
+        <header className="h-12 border-b border-border/50 bg-surface/80 backdrop-blur-xl flex items-center px-6 shrink-0">
           <div className="flex items-center gap-2.5">
             {crumb.icon && <span className="text-text-muted">{crumb.icon}</span>}
             <h2 className="text-sm font-semibold text-text">{crumb.label}</h2>
@@ -32,7 +32,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-bg to-bg">
           <Outlet />
         </main>
       </div>

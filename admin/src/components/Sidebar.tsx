@@ -125,18 +125,18 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`bg-surface border-r border-border flex flex-col h-screen shrink-0 transition-all duration-300 ${
+      className={`bg-surface/95 backdrop-blur-xl border-r border-border/50 flex flex-col h-screen shrink-0 transition-all duration-300 ${
         collapsed ? 'w-16' : 'w-[260px]'
       }`}
       role="navigation"
       aria-label="Menu principal"
     >
       {/* Logo */}
-      <div className="flex items-center justify-between px-4 h-14 border-b border-border/60">
+      <div className="flex items-center justify-between px-4 h-14 border-b border-border/30">
         {!collapsed && (
           <div className="flex items-center gap-2">
             <Circle className="w-3 h-3 text-primary fill-primary" />
-            <span className="text-xl font-bold text-primary tracking-tight">Aurion</span>
+            <span className="text-lg font-bold text-primary tracking-tight">Aurion</span>
           </div>
         )}
         <button
@@ -210,7 +210,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Divider */}
-      <div className="mx-3 border-t border-border/40" />
+      <div className="mx-3 border-t border-border/20" />
 
       {/* User area */}
       <div className="px-3 py-3">
