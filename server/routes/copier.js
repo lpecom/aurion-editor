@@ -45,12 +45,15 @@ export default async function copierRoutes(fastify) {
       request.log.info('Downloading assets');
       const assetResult = await downloadAssets(cleanResult.html, url, serverOrigin);
 
+      const warnings = [...(assetResult.warnings || [])];
+      if (scrapeResult.warning) warnings.push(scrapeResult.warning);
+
       return {
         html: assetResult.html,
         original_title: originalTitle,
         assets_downloaded: assetResult.assetsDownloaded,
         removed_items: cleanResult.removedItems,
-        warnings: assetResult.warnings,
+        warnings,
         scrape_method: scrapeResult.method,
       };
     } catch (err) {

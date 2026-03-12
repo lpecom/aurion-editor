@@ -5,9 +5,10 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 
 /**
  * Scrape a URL and return its HTML content.
- * Layer 1: Fetch + Cheerio. If body text < 500 chars, falls back to Puppeteer.
+ * Layer 1: Fetch + Cheerio. If body text is thin or SPA-like, falls back to Puppeteer.
+ * If Puppeteer is unavailable, returns the fetch HTML anyway (best-effort).
  * @param {string} url
- * @returns {{ html: string, method: 'fetch' | 'puppeteer' }}
+ * @returns {{ html: string, method: 'fetch' | 'puppeteer', warning?: string }}
  */
 export async function scrapeUrl(url) {
   // Validate URL
@@ -22,6 +23,9 @@ export async function scrapeUrl(url) {
   }
 
   // Layer 1: Fetch + Cheerio
+  let fetchHtml = null;
+  let needsPuppeteer = false;
+
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': USER_AGENT },
@@ -31,35 +35,57 @@ export async function scrapeUrl(url) {
 
     if (!res.ok) {
       if ([403, 429, 503].includes(res.status)) {
-        // These statuses often mean the page blocks plain fetch — try Puppeteer
-        throw new Error(`Fetch returned ${res.status}, trying Puppeteer`);
+        needsPuppeteer = true;
+      } else {
+        throw Object.assign(new Error(`Página retornou HTTP ${res.status}`), { statusCode: 422 });
       }
-      throw Object.assign(new Error(`Página retornou HTTP ${res.status}`), { statusCode: 422 });
     }
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
+    if (!needsPuppeteer) {
+      fetchHtml = await res.text();
+      const $ = cheerio.load(fetchHtml);
 
-    // Detect SPA shells — they have a root div and heavy JS but little content
-    const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
-    const isSpaShell = (
-      bodyText.length < 200 &&
-      ($('#app').length > 0 || $('#root').length > 0 || $('#__next').length > 0 || $('[id*="app"]').length > 0)
-    );
+      const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
+      const isSpaShell = (
+        bodyText.length < 200 &&
+        ($('#app').length > 0 || $('#root').length > 0 || $('#__next').length > 0 || $('[id*="app"]').length > 0)
+      );
 
-    if (!isSpaShell && bodyText.length >= 500) {
-      return { html, method: 'fetch' };
+      if (!isSpaShell && bodyText.length >= 500) {
+        return { html: fetchHtml, method: 'fetch' };
+      }
+
+      // Not enough content — try Puppeteer
+      needsPuppeteer = true;
+      console.log(`Fetch returned only ${bodyText.length} chars of text, trying Puppeteer`);
     }
-
-    // Not enough content — fall through to Puppeteer
-    console.log(`Fetch returned only ${bodyText.length} chars of text, falling back to Puppeteer`);
   } catch (err) {
     if (err.statusCode) throw err;
-    console.log(`Fetch failed (${err.message}), falling back to Puppeteer`);
+    needsPuppeteer = true;
+    console.log(`Fetch failed (${err.message}), trying Puppeteer`);
   }
 
   // Layer 2: Puppeteer
-  return scrapeWithPuppeteer(url);
+  if (needsPuppeteer) {
+    try {
+      return await scrapeWithPuppeteer(url);
+    } catch (puppeteerErr) {
+      // If we have fetch HTML, return it as best-effort instead of failing
+      if (fetchHtml) {
+        console.log(`Puppeteer failed (${puppeteerErr.message}), returning fetch HTML as fallback`);
+        return {
+          html: fetchHtml,
+          method: 'fetch',
+          warning: 'Página pode estar incompleta — renderização JS não disponível no servidor.',
+        };
+      }
+      // No fetch HTML either — throw
+      throw puppeteerErr;
+    }
+  }
+
+  // Should not reach here, but just in case
+  throw Object.assign(new Error('Não foi possível obter o conteúdo da página'), { statusCode: 422 });
 }
 
 async function scrapeWithPuppeteer(url) {
@@ -75,9 +101,6 @@ async function scrapeWithPuppeteer(url) {
       '/usr/bin/google-chrome',
       '/usr/bin/chromium-browser',
       '/usr/bin/chromium',
-      '/nix/store/chromium/bin/chromium',       // Nixpacks
-      '/app/.apt/usr/bin/chromium',             // Railway apt
-      '/app/.apt/usr/bin/chromium-browser',
     ].filter(Boolean);
     let executablePath = possiblePaths.find(p => existsSync(p));
 
@@ -91,7 +114,7 @@ async function scrapeWithPuppeteer(url) {
     }
 
     if (!executablePath) {
-      throw new Error('Chromium não encontrado no sistema. Instale o Chrome/Chromium ou defina CHROME_PATH.');
+      throw new Error('Chromium não encontrado no sistema.');
     }
 
     browser = await puppeteer.default.launch({
@@ -108,7 +131,7 @@ async function scrapeWithPuppeteer(url) {
     return { html, method: 'puppeteer' };
   } catch (err) {
     throw Object.assign(
-      new Error(`Não foi possível clonar a página: ${err.message}`),
+      new Error(`Puppeteer falhou: ${err.message}`),
       { statusCode: 422 }
     );
   } finally {
