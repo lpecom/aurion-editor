@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, FileText, Newspaper, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../lib/api';
 
 interface CreatePageModalProps {
@@ -26,6 +26,7 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
   const [lang, setLang] = useState('pt-BR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [visible, setVisible] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,10 +42,17 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
       setSlugManual(false);
       setLang('pt-BR');
       setError('');
+      // Trigger entrance animation
+      requestAnimationFrame(() => setVisible(true));
+    } else {
+      setVisible(false);
     }
   }, [open]);
 
   if (!open) return null;
+
+  const slugValid = slug.trim().length > 0 && /^[a-z0-9-]+$/.test(slug);
+  const slugTouched = slug.length > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,16 +81,34 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+      className={`fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 transition-opacity duration-200 ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
     >
-      <div className="bg-surface border border-border rounded-lg w-full max-w-md">
+      <div
+        className={`bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl transition-all duration-300 ${
+          visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'
+        }`}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h3 className="text-lg font-semibold text-text">
-            {type === 'pv' ? 'Nova Página de Venda' : 'Novo Advertorial'}
-          </h3>
+          <div className="flex items-center gap-3">
+            {type === 'pv' ? (
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-primary" />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                <Newspaper className="w-4 h-4 text-accent" />
+              </div>
+            )}
+            <h3 className="text-lg font-semibold text-text">
+              {type === 'pv' ? 'Nova Página de Venda' : 'Novo Advertorial'}
+            </h3>
+          </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
+            aria-label="Fechar"
+            className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,8 +116,9 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-md px-3 py-2">
-              {error}
+            <div className="flex items-center gap-2 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -102,26 +129,46 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Produto XYZ"
-              className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm placeholder:text-text-muted/50 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
+              className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2.5 text-text text-sm placeholder:text-text-muted/50 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all duration-200"
               autoFocus
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-text-muted mb-1.5">Slug</label>
-            <div className="flex items-center gap-2">
-              <span className="text-text-muted text-sm">/</span>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => {
-                  setSlugManual(true);
-                  setSlug(e.target.value);
-                }}
-                placeholder="produto-xyz"
-                className="flex-1 bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm font-mono placeholder:text-text-muted/50 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-              />
+            <div className="relative flex items-center gap-2">
+              <span className="text-text-muted text-sm font-mono">/</span>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => {
+                    setSlugManual(true);
+                    setSlug(e.target.value);
+                  }}
+                  placeholder="produto-xyz"
+                  className={`w-full bg-surface-2 border rounded-lg px-3 py-2.5 pr-9 text-text text-sm font-mono placeholder:text-text-muted/50 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all duration-200 ${
+                    slugTouched
+                      ? slugValid
+                        ? 'border-primary/40'
+                        : 'border-danger/40'
+                      : 'border-border'
+                  }`}
+                />
+                {slugTouched && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {slugValid ? (
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-danger" />
+                    )}
+                  </span>
+                )}
+              </div>
             </div>
+            {slugTouched && !slugValid && (
+              <p className="text-xs text-danger mt-1 ml-5">Use apenas letras minúsculas, números e hífens</p>
+            )}
           </div>
 
           <div>
@@ -129,7 +176,7 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
             <select
               value={lang}
               onChange={(e) => setLang(e.target.value)}
-              className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
+              className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2.5 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all duration-200"
             >
               <option value="pt-BR">Português (BR)</option>
               <option value="en">English</option>
@@ -141,16 +188,23 @@ export default function CreatePageModal({ open, onClose, type }: CreatePageModal
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
+              className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-border text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={loading || !title.trim() || !slug.trim()}
-              className="flex-1 px-4 py-2 text-sm font-medium rounded-md bg-primary text-bg hover:bg-primary/90 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !title.trim() || !slug.trim() || !slugValid}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary text-bg hover:bg-primary/90 cursor-pointer transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
-              {loading ? 'Criando...' : 'Criar'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-bg/30 border-t-bg rounded-full animate-spin" />
+                  Criando...
+                </span>
+              ) : (
+                'Criar'
+              )}
             </button>
           </div>
         </form>

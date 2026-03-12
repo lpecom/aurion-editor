@@ -39,6 +39,8 @@ interface PublishModalProps {
 
 type Step = 'category' | 'domain' | 'published';
 
+const STEPS: Step[] = ['category', 'domain'];
+
 export default function PublishModal({
   open,
   onClose,
@@ -57,6 +59,8 @@ export default function PublishModal({
   const [publishedUrl, setPublishedUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
   // Add domain form
   const [showAddDomain, setShowAddDomain] = useState(false);
@@ -64,7 +68,10 @@ export default function PublishModal({
   const [addingDomain, setAddingDomain] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setVisible(false);
+      return;
+    }
     setStep('category');
     setSelectedCategoryId(currentCategoryId || null);
     setSelectedDomainId(null);
@@ -74,6 +81,7 @@ export default function PublishModal({
     setShowAddDomain(false);
     setNewDomain('');
     loadCategories();
+    requestAnimationFrame(() => setVisible(true));
   }, [open, currentCategoryId]);
 
   const loadCategories = async () => {
@@ -108,6 +116,7 @@ export default function PublishModal({
   }, [categories]);
 
   const handleCategoryNext = () => {
+    setSlideDirection('left');
     setStep('domain');
     loadDomains(selectedCategoryId);
   };
@@ -157,15 +166,31 @@ export default function PublishModal({
 
       setStep('published');
 
-      // Fire confetti
+      // Fire confetti - more dramatic
       setTimeout(() => {
         confetti({
-          particleCount: 100,
-          spread: 70,
+          particleCount: 120,
+          spread: 80,
           origin: { y: 0.6 },
           colors: ['#22C55E', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'],
         });
-      }, 300);
+      }, 200);
+      setTimeout(() => {
+        confetti({
+          particleCount: 60,
+          spread: 50,
+          origin: { y: 0.5, x: 0.3 },
+          colors: ['#22C55E', '#3B82F6'],
+        });
+      }, 500);
+      setTimeout(() => {
+        confetti({
+          particleCount: 60,
+          spread: 50,
+          origin: { y: 0.5, x: 0.7 },
+          colors: ['#F59E0B', '#8B5CF6'],
+        });
+      }, 700);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao publicar');
     } finally {
@@ -190,21 +215,34 @@ export default function PublishModal({
 
   if (!open) return null;
 
+  const currentStepIndex = STEPS.indexOf(step as 'category' | 'domain');
+
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className={`fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 transition-opacity duration-200 ${
+          visible ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={onClose}
+      >
         <div
-          className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden"
+          className={`bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden transition-all duration-300 ${
+            visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="flex items-center gap-3">
               {step === 'published' ? (
-                <PartyPopper className="w-5 h-5 text-primary" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <PartyPopper className="w-4 h-4 text-primary" />
+                </div>
               ) : (
-                <Globe className="w-5 h-5 text-primary" />
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-accent" />
+                </div>
               )}
               <h3 className="text-lg font-semibold text-text">
                 {step === 'category' && 'Escolha a Categoria'}
@@ -214,51 +252,63 @@ export default function PublishModal({
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors"
+              aria-label="Fechar"
+              className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Steps indicator */}
+          {/* Steps indicator - improved with connected line */}
           {step !== 'published' && (
-            <div className="px-6 pt-4 flex items-center gap-2">
-              {['category', 'domain'].map((s, i) => (
-                <div key={s} className="flex items-center gap-2">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                      s === step
-                        ? 'bg-primary text-bg'
-                        : i < ['category', 'domain'].indexOf(step)
-                          ? 'bg-primary/20 text-primary'
-                          : 'bg-surface-2 text-text-muted'
-                    }`}
-                  >
-                    {i < ['category', 'domain'].indexOf(step) ? (
-                      <Check className="w-3.5 h-3.5" />
-                    ) : (
-                      i + 1
+            <div className="px-6 pt-5 pb-1">
+              <div className="flex items-center justify-center gap-0">
+                {STEPS.map((s, i) => (
+                  <div key={s} className="flex items-center">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                          s === step
+                            ? 'bg-primary text-bg shadow-[0_0_12px_rgba(34,197,94,0.3)]'
+                            : i < currentStepIndex
+                              ? 'bg-primary text-bg'
+                              : 'bg-surface-2 text-text-muted'
+                        }`}
+                      >
+                        {i < currentStepIndex ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          i + 1
+                        )}
+                      </div>
+                      <span className={`text-xs font-medium transition-colors duration-200 ${
+                        s === step ? 'text-primary' : 'text-text-muted'
+                      }`}>
+                        {s === 'category' ? 'Categoria' : 'Domínio'}
+                      </span>
+                    </div>
+                    {i < STEPS.length - 1 && (
+                      <div className={`w-16 h-0.5 rounded-full mx-3 mb-5 transition-colors duration-300 ${
+                        i < currentStepIndex ? 'bg-primary' : 'bg-surface-2'
+                      }`} />
                     )}
                   </div>
-                  {i < 1 && (
-                    <div className={`w-12 h-0.5 rounded ${i < ['category', 'domain'].indexOf(step) ? 'bg-primary' : 'bg-surface-2'}`} />
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
           {/* Content */}
           <div className="px-6 py-5 min-h-[240px]">
             {error && (
-              <div className="mb-4 text-sm text-danger bg-danger/10 border border-danger/20 rounded-md px-3 py-2">
-                {error}
+              <div className="mb-4 flex items-center gap-2 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2.5">
+                <span>{error}</span>
               </div>
             )}
 
             {/* Step 1: Category */}
             {step === 'category' && (
-              <div className="space-y-3">
+              <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-200">
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
@@ -274,21 +324,25 @@ export default function PublishModal({
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategoryId(cat.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border cursor-pointer transition-all duration-200 ${
                         selectedCategoryId === cat.id
-                          ? 'border-primary bg-primary/5 text-text'
-                          : 'border-border bg-surface-2/50 text-text-muted hover:border-primary/30 hover:text-text'
+                          ? 'border-primary bg-primary/5 text-text shadow-[0_0_12px_rgba(34,197,94,0.1)]'
+                          : 'border-border bg-surface-2/50 text-text-muted hover:border-primary/30 hover:text-text hover:bg-surface-2'
                       }`}
                     >
-                      <FolderOpen className="w-4 h-4 shrink-0" />
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+                        selectedCategoryId === cat.id ? 'bg-primary/10' : 'bg-surface-2'
+                      }`}>
+                        <FolderOpen className="w-4 h-4 shrink-0" />
+                      </div>
                       <span className="text-sm font-medium">{cat.name}</span>
                       {cat.domains && cat.domains.length > 0 && (
-                        <span className="ml-auto text-xs text-text-muted">
+                        <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-surface-2 text-text-muted">
                           {cat.domains.length} domínio{cat.domains.length !== 1 ? 's' : ''}
                         </span>
                       )}
                       {selectedCategoryId === cat.id && (
-                        <Check className="w-4 h-4 text-primary ml-auto shrink-0" />
+                        <Check className="w-4 h-4 text-primary shrink-0" />
                       )}
                     </button>
                   ))
@@ -298,7 +352,9 @@ export default function PublishModal({
 
             {/* Step 2: Domain */}
             {step === 'domain' && (
-              <div className="space-y-3">
+              <div className={`space-y-3 animate-in fade-in ${
+                slideDirection === 'left' ? 'slide-in-from-right-2' : 'slide-in-from-left-2'
+              } duration-200`}>
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
@@ -316,13 +372,17 @@ export default function PublishModal({
                         <button
                           key={d.id}
                           onClick={() => setSelectedDomainId(d.id === selectedDomainId ? null : d.id)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
+                          className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border cursor-pointer transition-all duration-200 ${
                             selectedDomainId === d.id
-                              ? 'border-primary bg-primary/5 text-text'
-                              : 'border-border bg-surface-2/50 text-text-muted hover:border-primary/30 hover:text-text'
+                              ? 'border-primary bg-primary/5 text-text shadow-[0_0_12px_rgba(34,197,94,0.1)]'
+                              : 'border-border bg-surface-2/50 text-text-muted hover:border-primary/30 hover:text-text hover:bg-surface-2'
                           }`}
                         >
-                          <Globe className="w-4 h-4 shrink-0" />
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+                            selectedDomainId === d.id ? 'bg-primary/10' : 'bg-surface-2'
+                          }`}>
+                            <Globe className="w-4 h-4 shrink-0" />
+                          </div>
                           <span className="text-sm font-medium">{d.domain}</span>
                           <span
                             className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
@@ -350,12 +410,12 @@ export default function PublishModal({
                           placeholder="ex: meusite.com.br"
                           autoFocus
                           onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
-                          className="flex-1 bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                          className="flex-1 bg-surface-2 border border-border rounded-lg px-3 py-2.5 text-text text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all duration-200"
                         />
                         <button
                           onClick={handleAddDomain}
                           disabled={addingDomain || !newDomain.trim()}
-                          className="px-3 py-2 bg-primary text-bg text-sm font-medium rounded-md hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-colors"
+                          className="px-3 py-2.5 bg-primary text-bg text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                         >
                           {addingDomain ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adicionar'}
                         </button>
@@ -364,7 +424,8 @@ export default function PublishModal({
                             setShowAddDomain(false);
                             setNewDomain('');
                           }}
-                          className="p-2 text-text-muted hover:text-text cursor-pointer"
+                          aria-label="Cancelar"
+                          className="p-2.5 text-text-muted hover:text-text cursor-pointer transition-colors duration-200"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -372,7 +433,7 @@ export default function PublishModal({
                     ) : (
                       <button
                         onClick={() => setShowAddDomain(true)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-dashed border-border text-text-muted hover:border-primary/50 hover:text-text cursor-pointer transition-all"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border border-dashed border-border text-text-muted hover:border-primary/50 hover:text-text cursor-pointer transition-all duration-200"
                       >
                         <Plus className="w-4 h-4" />
                         <span className="text-sm">Adicionar domínio</span>
@@ -385,24 +446,25 @@ export default function PublishModal({
 
             {/* Step 3: Published */}
             {step === 'published' && (
-              <div className="text-center py-4 space-y-5">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <Check className="w-8 h-8 text-primary" />
+              <div className="text-center py-4 space-y-5 animate-in fade-in zoom-in-95 duration-300">
+                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/10 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(34,197,94,0.15)]">
+                  <Check className="w-10 h-10 text-primary" />
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-text mb-1">Publicada com sucesso!</h4>
+                  <h4 className="text-xl font-bold text-text mb-1">Publicada com sucesso!</h4>
                   <p className="text-sm text-text-muted">Sua página está no ar e pronta para receber visitantes.</p>
                 </div>
 
                 {/* URL display */}
-                <div className="bg-surface-2 border border-border rounded-lg p-4">
-                  <p className="text-xs text-text-muted mb-2">URL da página</p>
+                <div className="bg-surface-2/80 backdrop-blur-sm border border-border rounded-xl p-4">
+                  <p className="text-xs text-text-muted mb-2 uppercase tracking-wider font-medium">URL da página</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-sm text-primary font-mono truncate">{publishedUrl}</code>
                     <button
                       onClick={handleCopyUrl}
-                      className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-all ${
+                      aria-label={copied ? 'URL copiada' : 'Copiar URL'}
+                      className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none ${
                         copied
                           ? 'bg-primary text-bg'
                           : 'bg-surface border border-border text-text hover:border-primary/50'
@@ -427,7 +489,7 @@ export default function PublishModal({
                   href={publishedUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors duration-200"
                 >
                   <ExternalLink className="w-4 h-4" />
                   Abrir em nova aba
@@ -440,8 +502,15 @@ export default function PublishModal({
           {step !== 'published' && (
             <div className="px-6 py-4 border-t border-border flex items-center justify-between">
               <button
-                onClick={step === 'category' ? onClose : () => setStep('category')}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-text-muted hover:text-text rounded-md cursor-pointer transition-colors"
+                onClick={() => {
+                  if (step === 'category') {
+                    onClose();
+                  } else {
+                    setSlideDirection('right');
+                    setStep('category');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-text-muted hover:text-text rounded-lg cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
               >
                 {step === 'domain' && <ChevronLeft className="w-4 h-4" />}
                 {step === 'category' ? 'Cancelar' : 'Voltar'}
@@ -451,7 +520,7 @@ export default function PublishModal({
                 <button
                   onClick={handleCategoryNext}
                   disabled={!selectedCategoryId}
-                  className="flex items-center gap-1.5 px-5 py-2 text-sm font-medium bg-primary text-bg rounded-md hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium bg-primary text-bg rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                 >
                   Próximo
                   <ChevronRight className="w-4 h-4" />
@@ -460,7 +529,7 @@ export default function PublishModal({
                 <button
                   onClick={handlePublish}
                   disabled={publishing}
-                  className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-primary text-bg rounded-md hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-colors"
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-primary text-bg rounded-lg hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                 >
                   {publishing ? (
                     <>
@@ -483,7 +552,7 @@ export default function PublishModal({
             <div className="px-6 py-4 border-t border-border flex justify-center">
               <button
                 onClick={onClose}
-                className="px-6 py-2 text-sm font-medium bg-surface-2 border border-border text-text rounded-md hover:bg-surface-2/80 cursor-pointer transition-colors"
+                className="px-8 py-2.5 text-sm font-medium bg-surface-2 border border-border text-text rounded-lg hover:bg-surface-2/80 cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
               >
                 Fechar
               </button>
