@@ -1,4 +1,4 @@
-import { useEffect, useCallback, type ReactNode } from 'react';
+import { useEffect, useCallback, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -11,6 +11,8 @@ interface ModalProps {
 }
 
 export default function Modal({ open, onClose, title, children, footer, maxWidth = 'max-w-lg' }: ModalProps) {
+  const titleId = useId();
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -33,17 +35,23 @@ export default function Modal({ open, onClose, title, children, footer, maxWidth
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`w-full ${maxWidth} bg-surface border border-border rounded-lg shadow-xl flex flex-col max-h-[90vh] transition-transform duration-200`}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`w-full ${maxWidth} bg-surface border border-border rounded-lg shadow-xl flex flex-col max-h-[90vh] cursor-default animate-in zoom-in-95 fade-in duration-200`}
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-text">{title}</h2>
+          <h2 id={titleId} className="text-lg font-semibold text-text">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
+            aria-label="Fechar"
+            className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
           >
             <X className="w-5 h-5" />
           </button>

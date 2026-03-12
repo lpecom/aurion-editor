@@ -136,13 +136,30 @@ export default function Scripts() {
     }
   };
 
+  const addLineNumbers = (code: string) => {
+    return code.split('\n').map((line, i) => (
+      <div key={i} className="flex">
+        <span className="select-none text-text-muted/40 w-8 shrink-0 text-right pr-3">{i + 1}</span>
+        <span className="flex-1">{line || ' '}</span>
+      </div>
+    ));
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-text">Scripts</h1>
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-primary/10 p-2.5">
+            <Terminal className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-text">Scripts</h1>
+            <p className="text-sm text-text-muted">Gerencie scripts personalizados injetados nas suas páginas.</p>
+          </div>
+        </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
+          className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
         >
           <Plus className="w-4 h-4" />
           Novo Script
@@ -150,12 +167,12 @@ export default function Scripts() {
       </div>
 
       {loading && (
-        <div className="bg-surface border border-border rounded-lg overflow-hidden animate-pulse">
+        <div className="bg-surface border border-border rounded-lg overflow-hidden">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-border last:border-b-0">
+            <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-border last:border-b-0 animate-pulse">
               <div className="h-4 bg-surface-2 rounded w-1/4" />
-              <div className="h-4 bg-surface-2 rounded w-1/6" />
-              <div className="h-4 bg-surface-2 rounded w-12" />
+              <div className="h-5 bg-surface-2 rounded-full w-20" />
+              <div className="h-7 bg-surface-2 rounded-full w-12" />
               <div className="h-4 bg-surface-2 rounded w-1/6 ml-auto" />
             </div>
           ))}
@@ -170,7 +187,7 @@ export default function Scripts() {
           action={
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
+              className="flex items-center gap-2 bg-primary text-bg font-medium rounded-md px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
               <Plus className="w-4 h-4" />
               Novo Script
@@ -183,53 +200,60 @@ export default function Scripts() {
         <div className="bg-surface border border-border rounded-lg overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left text-xs font-medium text-text-muted uppercase tracking-wider px-6 py-3">Nome</th>
-                <th className="text-left text-xs font-medium text-text-muted uppercase tracking-wider px-6 py-3">Posicao</th>
-                <th className="text-left text-xs font-medium text-text-muted uppercase tracking-wider px-6 py-3">Status</th>
-                <th className="text-right text-xs font-medium text-text-muted uppercase tracking-wider px-6 py-3">Acoes</th>
+              <tr className="border-b border-border bg-surface-2/30">
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Nome</th>
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Posicao</th>
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Status</th>
+                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Acoes</th>
               </tr>
             </thead>
             <tbody>
               {scripts.map((script) => (
-                <tr key={script.id} className="border-b border-border last:border-b-0 hover:bg-surface-2/50 transition-colors duration-200">
+                <tr key={script.id} className="border-b border-border last:border-b-0 hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
                   <td className="px-6 py-4 text-text font-medium">{script.name}</td>
                   <td className="px-6 py-4">
-                    <Badge variant={positionBadgeVariant(script.position)}>
+                    <Badge variant={positionBadgeVariant(script.position)} dot>
                       {POSITION_LABELS[script.position] || script.position}
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => toggleActive(script)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors duration-200 ${
+                      aria-label={script.active ? 'Desativar script' : 'Ativar script'}
+                      className={`relative inline-flex h-7 w-12 items-center rounded-full cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none ${
                         script.active ? 'bg-primary' : 'bg-surface-2 border border-border'
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200 ${
+                        className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
                           script.active ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
                     </button>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => setPreviewScript(script)}
-                        className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
+                        aria-label={`Visualizar codigo de ${script.name}`}
+                        title={`Visualizar codigo de ${script.name}`}
+                        className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openEdit(script)}
-                        className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200"
+                        aria-label={`Editar ${script.name}`}
+                        title={`Editar ${script.name}`}
+                        className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeleteTarget(script)}
-                        className="p-2 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200"
+                        aria-label={`Excluir ${script.name}`}
+                        title={`Excluir ${script.name}`}
+                        className="p-2 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -252,14 +276,14 @@ export default function Scripts() {
           <>
             <button
               onClick={() => setModalOpen(false)}
-              className="bg-surface-2 border border-border text-text px-4 py-2 rounded-md hover:bg-surface-2/80 cursor-pointer transition-colors duration-200"
+              className="bg-surface-2 border border-border text-text px-4 py-2 rounded-md hover:bg-surface-2/80 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !form.name || !form.code}
-              className="bg-primary text-bg font-medium px-4 py-2 rounded-md hover:bg-primary/90 cursor-pointer transition-colors duration-200 disabled:opacity-50"
+              className="bg-primary text-bg font-medium px-4 py-2 rounded-md hover:bg-primary/90 cursor-pointer transition-colors duration-200 disabled:opacity-50 focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
@@ -273,7 +297,7 @@ export default function Scripts() {
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+              className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
               placeholder="Google Tag Manager"
             />
           </div>
@@ -282,7 +306,7 @@ export default function Scripts() {
             <select
               value={form.position}
               onChange={(e) => setForm({ ...form, position: e.target.value })}
-              className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none cursor-pointer"
+              className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none cursor-pointer transition-colors duration-200"
             >
               <option value="head">Head</option>
               <option value="body_start">Inicio do Body</option>
@@ -295,7 +319,7 @@ export default function Scripts() {
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value })}
               rows={10}
-              className="w-full bg-bg border border-border text-text rounded-md px-3 py-2 font-mono text-sm min-h-[200px] focus:ring-2 focus:ring-primary/50 focus:outline-none"
+              className="w-full bg-bg border border-border text-primary/90 rounded-lg px-4 py-3 font-mono text-sm min-h-[200px] leading-relaxed focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
               placeholder="<script>...</script>"
             />
           </div>
@@ -305,12 +329,13 @@ export default function Scripts() {
               <button
                 type="button"
                 onClick={() => setForm({ ...form, active: form.active ? 0 : 1 })}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors duration-200 ${
+                aria-label={form.active ? 'Desativar script' : 'Ativar script'}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none ${
                   form.active ? 'bg-primary' : 'bg-surface-2 border border-border'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200 ${
+                  className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
                     form.active ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
@@ -328,9 +353,19 @@ export default function Scripts() {
         maxWidth="max-w-2xl"
       >
         {previewScript && (
-          <pre className="bg-bg border border-border rounded-md p-4 text-text text-sm font-mono overflow-x-auto whitespace-pre-wrap">
-            {previewScript.code}
-          </pre>
+          <div className="bg-bg border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface-2/30">
+              <span className="text-xs text-text-muted font-mono">
+                {POSITION_LABELS[previewScript.position] || previewScript.position}
+              </span>
+              <Badge variant={previewScript.active ? 'success' : 'default'} dot>
+                {previewScript.active ? 'Ativo' : 'Inativo'}
+              </Badge>
+            </div>
+            <pre className="p-4 text-sm font-mono text-text overflow-x-auto leading-relaxed">
+              {addLineNumbers(previewScript.code)}
+            </pre>
+          </div>
         )}
       </Modal>
 

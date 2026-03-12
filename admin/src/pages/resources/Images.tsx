@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Image, Upload, Search, X, Copy, Trash2, Loader2 } from 'lucide-react';
+import { Image, Upload, Search, Copy, Trash2, Loader2 } from 'lucide-react';
 import { api } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -108,7 +108,15 @@ export default function Images() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-text">Imagens</h1>
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-accent/10 p-2.5">
+            <Image className="w-6 h-6 text-accent" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-text">Imagens</h1>
+            <p className="text-sm text-text-muted">Gerencie suas imagens e arquivos de mídia.</p>
+          </div>
+        </div>
       </div>
 
       {/* Upload zone */}
@@ -120,12 +128,14 @@ export default function Images() {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`mb-6 border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors duration-200 ${
-          dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+        className={`mb-6 border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
+          dragOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-border hover:border-primary/50 hover:bg-surface-2/30'
         }`}
       >
-        <Upload className="w-8 h-8 text-text-muted mb-2" />
-        <p className="text-text-muted text-sm">Arraste imagens aqui ou clique para enviar</p>
+        <div className={`rounded-2xl bg-surface-2/50 p-4 mb-3 transition-transform duration-200 ${dragOver ? 'scale-110' : ''}`}>
+          <Upload className="w-8 h-8 text-text-muted" />
+        </div>
+        <p className="text-text font-medium text-sm">Arraste imagens aqui ou clique para enviar</p>
         <p className="text-text-muted text-xs mt-1">JPEG, PNG, WebP, SVG</p>
         <input
           ref={fileInputRef}
@@ -142,7 +152,7 @@ export default function Images() {
         <div className="mb-4 space-y-2">
           {uploading.map((name) => (
             <div key={name} className="flex items-center gap-2 text-sm text-text-muted bg-surface border border-border rounded-md px-3 py-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
               <span>Enviando {name}...</span>
             </div>
           ))}
@@ -151,14 +161,14 @@ export default function Images() {
 
       {/* Search */}
       {!loading && images.length > 0 && (
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+        <div className="relative mb-6 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
           <input
             type="text"
             placeholder="Buscar imagens..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface-2 border border-border text-text rounded-md pl-10 pr-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+            className="w-full bg-surface-2 border border-border text-text text-sm rounded-md pl-9 pr-3 py-2 focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
           />
         </div>
       )}
@@ -167,7 +177,7 @@ export default function Images() {
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-surface border border-border rounded-lg overflow-hidden animate-pulse">
+            <div key={i} className="bg-surface border border-border rounded-xl overflow-hidden animate-pulse">
               <div className="w-full h-40 bg-surface-2" />
               <div className="p-3 space-y-2">
                 <div className="h-4 bg-surface-2 rounded w-3/4" />
@@ -194,13 +204,13 @@ export default function Images() {
             <div
               key={img.id}
               onClick={() => setSelected(img)}
-              className="bg-surface border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary/50 transition-colors duration-200"
+              className="group bg-surface border border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200"
             >
               <div className="w-full h-40 bg-surface-2 flex items-center justify-center overflow-hidden">
                 <img
                   src={`/assets/imgs/${img.filename}`}
                   alt={img.original_name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
               </div>
@@ -226,7 +236,7 @@ export default function Images() {
           <>
             <button
               onClick={() => selected && copyUrl(selected.filename)}
-              className="flex items-center gap-2 bg-surface-2 border border-border text-text px-4 py-2 rounded-md hover:bg-surface-2/80 cursor-pointer transition-colors duration-200"
+              className="flex items-center gap-2 bg-surface-2 border border-border text-text px-4 py-2 rounded-md hover:bg-surface-2/80 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
               <Copy className="w-4 h-4" />
               {copied ? 'Copiado!' : 'Copiar URL'}
@@ -238,7 +248,7 @@ export default function Images() {
                   setSelected(null);
                 }
               }}
-              className="flex items-center gap-2 bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 px-4 py-2 rounded-md cursor-pointer transition-colors duration-200"
+              className="flex items-center gap-2 bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 px-4 py-2 rounded-md cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
             >
               <Trash2 className="w-4 h-4" />
               Excluir
@@ -248,32 +258,32 @@ export default function Images() {
       >
         {selected && (
           <div className="space-y-4">
-            <div className="bg-surface-2 rounded-lg overflow-hidden flex items-center justify-center max-h-80">
+            <div className="bg-surface-2 rounded-xl overflow-hidden flex items-center justify-center" style={{ minHeight: '200px' }}>
               <img
                 src={`/assets/imgs/${selected.filename}`}
                 alt={selected.original_name}
-                className="max-w-full max-h-80 object-contain"
+                className="max-w-full max-h-96 object-contain"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-text-muted">Arquivo</p>
-                <p className="text-text font-medium">{selected.filename}</p>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-surface-2/50 rounded-lg p-3">
+                <p className="text-text-muted text-xs mb-1">Arquivo</p>
+                <p className="text-text font-medium truncate">{selected.filename}</p>
               </div>
-              <div>
-                <p className="text-text-muted">Nome original</p>
-                <p className="text-text font-medium">{selected.original_name}</p>
+              <div className="bg-surface-2/50 rounded-lg p-3">
+                <p className="text-text-muted text-xs mb-1">Nome original</p>
+                <p className="text-text font-medium truncate">{selected.original_name}</p>
               </div>
-              <div>
-                <p className="text-text-muted">Tamanho</p>
+              <div className="bg-surface-2/50 rounded-lg p-3">
+                <p className="text-text-muted text-xs mb-1">Tamanho</p>
                 <p className="text-text font-medium">{formatSize(selected.size)}</p>
               </div>
-              <div>
-                <p className="text-text-muted">Dimensoes</p>
+              <div className="bg-surface-2/50 rounded-lg p-3">
+                <p className="text-text-muted text-xs mb-1">Dimensoes</p>
                 <p className="text-text font-medium">{selected.width}x{selected.height}</p>
               </div>
-              <div>
-                <p className="text-text-muted">Tipo MIME</p>
+              <div className="bg-surface-2/50 rounded-lg p-3">
+                <p className="text-text-muted text-xs mb-1">Tipo MIME</p>
                 <p className="text-text font-medium">{selected.mime_type}</p>
               </div>
             </div>
