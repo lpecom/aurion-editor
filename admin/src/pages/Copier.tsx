@@ -216,6 +216,7 @@ export default function Copier() {
       title="Love Sosa"
       artist="Chief Keef"
       src="/love-sosa.mp3"
+      startAt={70}
     />
   ) : null;
 
