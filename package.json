@@ -4,7 +4,7 @@
   "description": "Admin panel with visual HTML editor for static sites",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "bin": {
     "staticflow": "./bin/staticflow.js"
