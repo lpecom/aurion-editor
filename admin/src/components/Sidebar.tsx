@@ -35,12 +35,21 @@ interface NavItem {
   children?: { label: string; to: string; icon: React.ReactNode }[];
 }
 
-const navItems: NavItem[] = [
+const navItems: (NavItem | { separator: string })[] = [
   { label: 'Dashboard', to: '/', icon: <LayoutDashboard className="w-5 h-5" /> },
+
+  { separator: 'Conteúdo' },
   { label: 'Páginas de Venda', to: '/paginas-de-venda', icon: <FileText className="w-5 h-5" /> },
   { label: 'Advertoriais', to: '/advertoriais', icon: <Newspaper className="w-5 h-5" /> },
   { label: 'Auxiliares', to: '/auxiliares', icon: <FileStack className="w-5 h-5" /> },
   { label: 'Copier', to: '/copier', icon: <Copy className="w-5 h-5" /> },
+
+  { separator: 'Marketing' },
+  { label: 'Funis de Venda', to: '/funis', icon: <GitBranch className="w-5 h-5" /> },
+  { label: 'Teste A/B', to: '/teste-ab', icon: <Zap className="w-5 h-5" /> },
+  { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" /> },
+
+  { separator: 'Ferramentas' },
   {
     label: 'Recursos',
     icon: <FolderOpen className="w-5 h-5" />,
@@ -52,13 +61,12 @@ const navItems: NavItem[] = [
       { label: 'Idiomas', to: '/recursos/idiomas', icon: <Globe className="w-5 h-5" /> },
     ],
   },
-  { label: 'Teste A/B', to: '/teste-ab', icon: <Zap className="w-5 h-5" /> },
-  { label: 'Conversion Boosters', to: '/conversion-boosters', icon: <Zap className="w-5 h-5" /> },
-  { label: 'Funis de Venda', to: '/funis', icon: <GitBranch className="w-5 h-5" /> },
   { label: 'Script Maker', to: '/script-maker', icon: <Wand2 className="w-5 h-5" /> },
+  { label: 'Traduções', to: '/traducoes', icon: <Languages className="w-5 h-5" /> },
   { label: 'Healthcheck', to: '/healthcheck', icon: <Activity className="w-5 h-5" /> },
   { label: 'Claude', to: '/claude', icon: <Bot className="w-5 h-5" /> },
-  { label: 'Traduções', to: '/traducoes', icon: <Languages className="w-5 h-5" /> },
+
+  { separator: 'Sistema' },
   {
     label: 'Integrações',
     icon: <Plug className="w-5 h-5" />,
@@ -150,7 +158,18 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1" aria-label="Navegação principal">
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
+          if ('separator' in item) {
+            if (collapsed) return <div key={index} className="mx-3 my-2 border-t border-border/20" />;
+            return (
+              <div key={index} className="pt-4 pb-1 px-3">
+                <span className="text-[10px] font-semibold text-zinc-600 uppercase tracking-[0.15em]">
+                  {item.separator}
+                </span>
+              </div>
+            );
+          }
+
           if (item.children) {
             return (
               <div key={item.label}>
