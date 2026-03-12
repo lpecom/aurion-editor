@@ -1,7 +1,11 @@
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import { Play } from 'lucide-react';
 
-export default function EntryNode({ data, selected }: NodeProps) {
+interface EntryNodeData {
+  entry_slug?: string;
+}
+
+export default function EntryNode({ data, selected }: { data: EntryNodeData; selected?: boolean }) {
   return (
     <div className={`px-4 py-3 rounded-xl border-2 min-w-[180px] ${
       selected ? 'border-green-400 shadow-lg shadow-green-400/20' : 'border-green-400/50'
