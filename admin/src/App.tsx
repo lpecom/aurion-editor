@@ -29,6 +29,7 @@ const Healthcheck = lazy(() => import('./pages/Healthcheck'));
 const Claude = lazy(() => import('./pages/Claude'));
 const Funnels = lazy(() => import('./pages/Funnels'));
 const FunnelEditor = lazy(() => import('./pages/FunnelEditor'));
+const FAQ = lazy(() => import('./pages/FAQ'));
 
 function PageLoader() {
   return (
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="traducoes" element={<SuspenseWrapper><Translations /></SuspenseWrapper>} />
             <Route path="integracoes/provedores" element={<SuspenseWrapper><TranslationProviders /></SuspenseWrapper>} />
             <Route path="integracoes/cloudflare" element={<SuspenseWrapper><CloudflareAccounts /></SuspenseWrapper>} />
+            <Route path="faq" element={<SuspenseWrapper><FAQ /></SuspenseWrapper>} />
           </Route>
         </Routes>
         </ErrorBoundary>

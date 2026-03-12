@@ -14,6 +14,7 @@ import {
   Languages,
   Plug,
   Cloud,
+  HelpCircle,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -75,6 +76,7 @@ const navItems: (NavItem | { separator: string })[] = [
       { label: 'Cloudflare', to: '/integracoes/cloudflare', icon: <Cloud className="w-5 h-5" /> },
     ],
   },
+  { label: 'FAQ', to: '/faq', icon: <HelpCircle className="w-5 h-5" /> },
 ];
 
 function NavItemLink({
