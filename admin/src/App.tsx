@@ -14,9 +14,13 @@ import Languages from './pages/resources/Languages';
 import TranslationProviders from './pages/resources/TranslationProviders';
 import CloudflareAccounts from './pages/integrations/CloudflareAccounts';
 import ConversionBoosters from './pages/ConversionBoosters';
+import ConversionBoostersHub from './pages/ConversionBoostersHub';
+import ScriptMaker from './pages/ScriptMaker';
 import Translations from './pages/Translations';
 import EditorPage from './pages/EditorPage';
 import Copier from './pages/Copier';
+import Healthcheck from './pages/Healthcheck';
+import Claude from './pages/Claude';
 
 export default function App() {
   return (
@@ -50,7 +54,11 @@ export default function App() {
             <Route path="recursos/dominios" element={<Domains />} />
             <Route path="recursos/scripts" element={<Scripts />} />
             <Route path="recursos/idiomas" element={<Languages />} />
-            <Route path="conversion-boosters" element={<ConversionBoosters />} />
+            <Route path="teste-ab" element={<ConversionBoosters />} />
+            <Route path="conversion-boosters" element={<ConversionBoostersHub />} />
+            <Route path="script-maker" element={<ScriptMaker />} />
+            <Route path="healthcheck" element={<Healthcheck />} />
+            <Route path="claude" element={<Claude />} />
             <Route path="traducoes" element={<Translations />} />
             <Route path="integracoes/provedores" element={<TranslationProviders />} />
             <Route path="integracoes/cloudflare" element={<CloudflareAccounts />} />

@@ -17,6 +17,11 @@ import copierRoutes from './routes/copier.js';
 import languagesRoutes from './routes/languages.js';
 import translationProvidersRoutes from './routes/translation-providers.js';
 import cloudflareAccountsRoutes from './routes/cloudflare-accounts.js';
+import cloakerRulesRoutes from './routes/cloaker-rules.js';
+import healthcheckRoutes from './routes/healthcheck.js';
+import apiKeysRoutes from './routes/api-keys.js';
+import activityLogRoutes from './routes/activity-log.js';
+import mcpRoutes from './routes/mcp.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const isProd = process.env.NODE_ENV === 'production';
@@ -52,6 +57,7 @@ fastify.addHook('onRequest', async (request, reply) => {
   const host = (request.hostname || '').split(':')[0];
   const url = request.url.split('?')[0];
   if (url === '/api/health') { request.isCustomDomain = false; return; }
+  if (url === '/api/mcp' || url.startsWith('/api/mcp')) { request.isCustomDomain = false; return; }
   if (MAIN_HOSTS.has(host)) { request.isCustomDomain = false; return; }
   request.isCustomDomain = true;
   request.customDomainHost = host;
@@ -76,6 +82,11 @@ await fastify.register(copierRoutes, { prefix: '/api' });
 await fastify.register(languagesRoutes, { prefix: '/api' });
 await fastify.register(translationProvidersRoutes, { prefix: '/api' });
 await fastify.register(cloudflareAccountsRoutes, { prefix: '/api' });
+await fastify.register(cloakerRulesRoutes, { prefix: '/api' });
+await fastify.register(healthcheckRoutes, { prefix: '/api' });
+await fastify.register(apiKeysRoutes, { prefix: '/api' });
+await fastify.register(activityLogRoutes, { prefix: '/api' });
+await fastify.register(mcpRoutes, { prefix: '/api' });
 
 // Static file serving
 await fastify.register(staticPlugin);

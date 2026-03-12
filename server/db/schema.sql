@@ -121,3 +121,45 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TEXT DEFAULT (datetime('now')),
   expires_at TEXT NOT NULL
 );
+
+-- Regras de cloaker por página
+CREATE TABLE IF NOT EXISTS page_cloaker_rules (
+  id TEXT PRIMARY KEY,
+  page_id TEXT NOT NULL UNIQUE REFERENCES pages(id) ON DELETE CASCADE,
+  enabled INTEGER DEFAULT 1,
+  action TEXT DEFAULT 'redirect',
+  redirect_url TEXT,
+  safe_page_id TEXT REFERENCES pages(id) ON DELETE SET NULL,
+  url_whitelist TEXT DEFAULT '[]',
+  countries_mode TEXT DEFAULT 'allow',
+  countries TEXT DEFAULT '[]',
+  devices_mode TEXT DEFAULT 'allow',
+  devices TEXT DEFAULT '[]',
+  browsers_mode TEXT DEFAULT 'allow',
+  browsers TEXT DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- API Keys para integração MCP (Claude Code)
+CREATE TABLE IF NOT EXISTS api_keys (
+  id TEXT PRIMARY KEY,
+  nickname TEXT NOT NULL,
+  api_key TEXT NOT NULL UNIQUE,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Log de atividades do MCP
+CREATE TABLE IF NOT EXISTS activity_log (
+  id TEXT PRIMARY KEY,
+  api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
+  nickname TEXT NOT NULL,
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT,
+  resource_name TEXT,
+  details TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_log_created_at ON activity_log(created_at);
