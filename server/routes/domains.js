@@ -119,6 +119,10 @@ export default async function domainsRoutes(fastify) {
       return reply.code(400).send({ error: 'No Cloudflare account associated with this domain' });
     }
 
+    if (!domain.cloudflare_zone_id) {
+      return reply.code(400).send({ error: 'Zone ID da Cloudflare não configurado. Edite o domínio e informe o Zone ID.' });
+    }
+
     const cfAccount = db.prepare('SELECT * FROM cloudflare_accounts WHERE id = ?').get(domain.cloudflare_account_id);
     if (!cfAccount) {
       return reply.code(400).send({ error: 'Cloudflare account not found' });
@@ -134,14 +138,18 @@ export default async function domainsRoutes(fastify) {
       .run(workerName, r2Bucket, id);
 
     try {
-      // Step 1: Create R2 bucket
-      await createR2Bucket(cfAccount, r2Bucket);
+      // Step 1: Create R2 bucket (ignore if already exists)
+      try {
+        await createR2Bucket(cfAccount, r2Bucket);
+      } catch (err) {
+        if (!err.message.includes('already exists') && !err.message.includes('already owned')) throw err;
+      }
 
       // Step 2: Deploy Worker with R2 binding
       await deployWorker(cfAccount, workerName, WORKER_SCRIPT, r2Bucket);
 
-      // Step 3: Configure custom domain
-      await setWorkerCustomDomain(cfAccount, workerName, domain.domain);
+      // Step 3: Configure custom domain (requires zone_id)
+      await setWorkerCustomDomain(cfAccount, workerName, domain.domain, domain.cloudflare_zone_id);
 
       // Step 4: Update domain record
       db.prepare("UPDATE domains SET worker_status = 'active', worker_error = NULL WHERE id = ?").run(id);
