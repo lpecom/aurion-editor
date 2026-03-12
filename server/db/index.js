@@ -39,6 +39,15 @@ function initSchema(db) {
   if (!cols.includes('project_data')) {
     db.exec("ALTER TABLE pages ADD COLUMN project_data TEXT");
   }
+  if (!cols.includes('category_id')) {
+    db.exec("ALTER TABLE pages ADD COLUMN category_id TEXT REFERENCES categories(id) ON DELETE SET NULL");
+  }
+  if (!cols.includes('category_config')) {
+    db.exec("ALTER TABLE pages ADD COLUMN category_config TEXT");
+  }
+  if (!cols.includes('frontmatter')) {
+    db.exec("ALTER TABLE pages ADD COLUMN frontmatter TEXT");
+  }
 }
 
 export function closeDb() {
