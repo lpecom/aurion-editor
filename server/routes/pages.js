@@ -37,10 +37,10 @@ export default async function pagesRoutes(fastify) {
 
   // GET /api/pages — list with filters
   fastify.get('/pages', async (request, reply) => {
-    const { type, status, lang, domain } = request.query;
+    const { type, status, lang, domain, variant_group } = request.query;
     const db = getDb();
 
-    let sql = 'SELECT id, title, slug, type, lang, domain, status, frontmatter, category_config, created_at, updated_at FROM pages WHERE 1=1';
+    let sql = 'SELECT id, title, slug, type, lang, domain, status, frontmatter, category_config, variant_group, variant_label, created_at, updated_at FROM pages WHERE 1=1';
     const params = [];
 
     if (type) {
@@ -58,6 +58,10 @@ export default async function pagesRoutes(fastify) {
     if (domain) {
       sql += ' AND domain = ?';
       params.push(domain);
+    }
+    if (variant_group) {
+      sql += ' AND variant_group = ?';
+      params.push(variant_group);
     }
 
     sql += ' ORDER BY updated_at DESC';
@@ -131,6 +135,78 @@ export default async function pagesRoutes(fastify) {
       ...page,
       frontmatter: page.frontmatter ? JSON.parse(page.frontmatter) : null,
       category_config: page.category_config ? JSON.parse(page.category_config) : null,
+    });
+  });
+
+  // POST /api/pages/:id/duplicate — duplicate page as A/B variant
+  fastify.post('/pages/:id/duplicate', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['title', 'slug'],
+        properties: {
+          title: { type: 'string' },
+          slug: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const db = getDb();
+    const { id } = request.params;
+    const { title, slug } = request.body;
+
+    // 1. Fetch source page
+    const source = db.prepare('SELECT * FROM pages WHERE id = ?').get(id);
+    if (!source) {
+      return reply.code(404).send({ error: 'Page not found' });
+    }
+
+    // 2. Check slug uniqueness
+    const slugExists = db.prepare('SELECT id FROM pages WHERE slug = ?').get(slug);
+    if (slugExists) {
+      return reply.code(409).send({ error: 'Slug already exists' });
+    }
+
+    // 3. Determine variant_group
+    const variantGroup = source.variant_group || source.slug;
+
+    // 4. If source doesn't have variant_label yet, update it
+    if (!source.variant_label) {
+      db.prepare(`
+        UPDATE pages SET variant_group = ?, variant_label = 'A', updated_at = datetime('now') WHERE id = ?
+      `).run(variantGroup, id);
+    }
+
+    // 5. Count existing variants, assign next letter
+    const count = db.prepare('SELECT COUNT(*) as cnt FROM pages WHERE variant_group = ?').get(variantGroup).cnt;
+    const nextLabel = String.fromCharCode(65 + count); // 65 = 'A', so if count=1 (source with 'A'), next is 'B'
+
+    // 6. Insert new page
+    const newId = randomUUID();
+    db.prepare(`
+      INSERT INTO pages (id, title, slug, html_content, project_data, type, lang, status, category_id, category_config, frontmatter, variant_group, variant_label)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)
+    `).run(
+      newId,
+      title,
+      slug,
+      source.html_content,
+      source.project_data,
+      source.type,
+      source.lang,
+      source.category_id,
+      source.category_config,
+      source.frontmatter,
+      variantGroup,
+      nextLabel
+    );
+
+    // 7. Return new page
+    const newPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(newId);
+    reply.code(201).send({
+      ...newPage,
+      frontmatter: newPage.frontmatter ? JSON.parse(newPage.frontmatter) : null,
+      category_config: newPage.category_config ? JSON.parse(newPage.category_config) : null,
     });
   });
 

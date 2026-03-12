@@ -48,6 +48,12 @@ function initSchema(db) {
   if (!cols.includes('frontmatter')) {
     db.exec("ALTER TABLE pages ADD COLUMN frontmatter TEXT");
   }
+  if (!cols.includes('variant_group')) {
+    db.exec("ALTER TABLE pages ADD COLUMN variant_group TEXT");
+  }
+  if (!cols.includes('variant_label')) {
+    db.exec("ALTER TABLE pages ADD COLUMN variant_label TEXT");
+  }
 }
 
 export function closeDb() {
