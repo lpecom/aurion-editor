@@ -50,7 +50,7 @@ export default async function categoriesRoutes(fastify) {
         required: ['name', 'type'],
         properties: {
           name: { type: 'string' },
-          type: { type: 'string', enum: ['pv', 'advertorial'] },
+          type: { type: 'string', enum: ['pv', 'advertorial', 'auxiliar'] },
           config: { type: 'object' },
         },
       },

@@ -170,6 +170,15 @@ export default function FunnelEditor() {
     [],
   );
 
+  const handleDeleteNode = useCallback(
+    (nodeId: string) => {
+      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+      setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+      setSelectedNodeId(null);
+    },
+    [],
+  );
+
   const handleNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
@@ -184,6 +193,10 @@ export default function FunnelEditor() {
 
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNodeId(node.id);
+  }, []);
+
+  const handlePaneClick = useCallback(() => {
+    setSelectedNodeId(null);
   }, []);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
@@ -353,6 +366,7 @@ export default function FunnelEditor() {
             onNodeClick={handleNodeClick}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
+            onPaneClick={handlePaneClick}
           />
         </main>
 
@@ -361,6 +375,8 @@ export default function FunnelEditor() {
           <NodeProperties
             selectedNode={selectedNode}
             onNodeUpdate={handleNodeUpdate}
+            onDeleteNode={handleDeleteNode}
+            domains={domains}
           />
         </aside>
       </div>

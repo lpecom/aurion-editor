@@ -13,8 +13,9 @@ export default function EntryNode({ data, selected }: { data: EntryNodeData; sel
         : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
     }`}>
       <div className="flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center relative">
           <Play className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>
         <span className="text-sm font-semibold text-emerald-400">Entrada</span>
       </div>

@@ -5,6 +5,7 @@ import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
+import ResourceFolderNav from '../../components/ResourceFolderNav';
 
 interface Pixel {
   id: number;
@@ -53,6 +54,7 @@ export default function Pixels() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Pixel | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   const fetchPixels = useCallback(async () => {
     try {
@@ -126,7 +128,9 @@ export default function Pixels() {
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 
   return (
-    <div>
+    <div className="flex -m-6 h-[calc(100vh-3.5rem)]">
+      <ResourceFolderNav selectedPageId={selectedPageId} onSelectPage={setSelectedPageId} />
+      <div className="flex-1 overflow-y-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2.5">
@@ -303,6 +307,7 @@ export default function Pixels() {
         loading={deleting}
         message={`Deseja excluir o pixel "${deleteTarget?.name}"? Esta acao nao pode ser desfeita.`}
       />
+      </div>
     </div>
   );
 }

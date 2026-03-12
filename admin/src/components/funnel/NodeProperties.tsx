@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, FileText, ExternalLink, Search } from 'lucide-react';
+import { Play, FileText, ExternalLink, Search, Trash2 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Node } from '@xyflow/react';
 
 interface NodePropertiesProps {
   selectedNode: Node | null;
   onNodeUpdate: (nodeId: string, data: Record<string, any>) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  domains?: { id: string; domain: string }[];
 }
 
 interface PageResult {
@@ -34,7 +36,7 @@ const NODE_LABELS: Record<string, string> = {
   redirect: 'Redirect',
 };
 
-export default function NodeProperties({ selectedNode, onNodeUpdate }: NodePropertiesProps) {
+export default function NodeProperties({ selectedNode, onNodeUpdate, onDeleteNode, domains }: NodePropertiesProps) {
   const [pages, setPages] = useState<PageResult[]>([]);
   const [pageSearch, setPageSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -104,11 +106,23 @@ export default function NodeProperties({ selectedNode, onNodeUpdate }: NodePrope
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-text-muted" />
-        <h3 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest">
-          {NODE_LABELS[nodeType] ?? 'Nó'}
-        </h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 text-text-muted" />
+          <h3 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest">
+            {NODE_LABELS[nodeType] ?? 'Nó'}
+          </h3>
+        </div>
+        {onDeleteNode && (
+          <button
+            onClick={() => onDeleteNode(selectedNode.id)}
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-400/10 cursor-pointer transition-all duration-200"
+            title="Excluir nó"
+            aria-label="Excluir nó selecionado"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Entry node */}
@@ -124,6 +138,23 @@ export default function NodeProperties({ selectedNode, onNodeUpdate }: NodePrope
             className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400/50 focus:border-green-400/50"
           />
           <p className="text-xs text-text-muted mt-1">URL que ativa o funil (ex: oferta-bf)</p>
+          {/* Domain selector for entry */}
+          {domains && domains.length > 0 && (
+            <div className="space-y-2 mt-4">
+              <label className="block text-sm font-medium text-text mb-1">Domínio de Entrada</label>
+              <select
+                value={(data.domain_id as string) ?? ''}
+                onChange={(e) => update({ domain_id: e.target.value || null })}
+                className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400/50 focus:border-emerald-400/50"
+              >
+                <option value="">Todos os domínios</option>
+                {domains.map((d) => (
+                  <option key={d.id} value={d.id}>{d.domain}</option>
+                ))}
+              </select>
+              <p className="text-xs text-text-muted mt-1">Domínio onde o funil será ativado</p>
+            </div>
+          )}
         </div>
       )}
 
