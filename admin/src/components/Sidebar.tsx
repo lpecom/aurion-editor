@@ -12,6 +12,7 @@ import {
   Zap,
   Languages,
   Plug,
+  Cloud,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
     icon: <Plug className="w-5 h-5" />,
     children: [
       { label: 'Provedores de Tradução', to: '/integracoes/provedores', icon: <Languages className="w-5 h-5" /> },
+      { label: 'Cloudflare', to: '/integracoes/cloudflare', icon: <Cloud className="w-5 h-5" /> },
     ],
   },
 ];

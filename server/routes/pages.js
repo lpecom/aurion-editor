@@ -331,7 +331,7 @@ export default async function pagesRoutes(fastify) {
     // If published, unpublish first
     if (page.status === 'published') {
       try {
-        await unpublishPage(page);
+        await unpublishPage(page, db);
       } catch (err) {
         // Continue with deletion even if unpublish fails
         request.log.warn({ err }, 'Failed to unpublish page before deletion');
@@ -559,7 +559,7 @@ export default async function pagesRoutes(fastify) {
     }
 
     try {
-      await unpublishPage(page);
+      await unpublishPage(page, db);
 
       db.prepare("UPDATE pages SET status = 'draft', updated_at = datetime('now') WHERE id = ?").run(id);
 

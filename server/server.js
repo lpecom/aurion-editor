@@ -16,6 +16,7 @@ import categoriesRoutes from './routes/categories.js';
 import copierRoutes from './routes/copier.js';
 import languagesRoutes from './routes/languages.js';
 import translationProvidersRoutes from './routes/translation-providers.js';
+import cloudflareAccountsRoutes from './routes/cloudflare-accounts.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const isProd = process.env.NODE_ENV === 'production';
@@ -74,6 +75,7 @@ await fastify.register(categoriesRoutes, { prefix: '/api' });
 await fastify.register(copierRoutes, { prefix: '/api' });
 await fastify.register(languagesRoutes, { prefix: '/api' });
 await fastify.register(translationProvidersRoutes, { prefix: '/api' });
+await fastify.register(cloudflareAccountsRoutes, { prefix: '/api' });
 
 // Static file serving
 await fastify.register(staticPlugin);

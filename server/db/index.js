@@ -57,6 +57,24 @@ function initSchema(db) {
   if (!cols.includes('source_page_id')) {
     db.exec("ALTER TABLE pages ADD COLUMN source_page_id TEXT REFERENCES pages(id) ON DELETE SET NULL");
   }
+
+  // Migrations: add Cloudflare hosting columns to domains
+  const domainCols = db.prepare("PRAGMA table_info(domains)").all().map(c => c.name);
+  if (!domainCols.includes('cloudflare_account_id')) {
+    db.exec("ALTER TABLE domains ADD COLUMN cloudflare_account_id TEXT REFERENCES cloudflare_accounts(id) ON DELETE SET NULL");
+  }
+  if (!domainCols.includes('worker_name')) {
+    db.exec("ALTER TABLE domains ADD COLUMN worker_name TEXT");
+  }
+  if (!domainCols.includes('r2_bucket')) {
+    db.exec("ALTER TABLE domains ADD COLUMN r2_bucket TEXT");
+  }
+  if (!domainCols.includes('worker_status')) {
+    db.exec("ALTER TABLE domains ADD COLUMN worker_status TEXT DEFAULT 'pending'");
+  }
+  if (!domainCols.includes('worker_error')) {
+    db.exec("ALTER TABLE domains ADD COLUMN worker_error TEXT");
+  }
 }
 
 export function closeDb() {

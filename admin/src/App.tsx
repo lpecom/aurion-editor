@@ -12,6 +12,7 @@ import Domains from './pages/resources/Domains';
 import Scripts from './pages/resources/Scripts';
 import Languages from './pages/resources/Languages';
 import TranslationProviders from './pages/resources/TranslationProviders';
+import CloudflareAccounts from './pages/integrations/CloudflareAccounts';
 import ConversionBoosters from './pages/ConversionBoosters';
 import Translations from './pages/Translations';
 import EditorPage from './pages/EditorPage';
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="conversion-boosters" element={<ConversionBoosters />} />
             <Route path="traducoes" element={<Translations />} />
             <Route path="integracoes/provedores" element={<TranslationProviders />} />
+            <Route path="integracoes/cloudflare" element={<CloudflareAccounts />} />
           </Route>
         </Routes>
       </AuthProvider>

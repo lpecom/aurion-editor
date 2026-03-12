@@ -106,6 +106,15 @@ CREATE TABLE IF NOT EXISTS translation_providers (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Contas Cloudflare (para hosting via Workers + R2)
+CREATE TABLE IF NOT EXISTS cloudflare_accounts (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  api_token TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Sessoes (auth single-user)
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
