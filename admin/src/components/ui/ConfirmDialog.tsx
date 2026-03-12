@@ -39,14 +39,14 @@ export default function ConfirmDialog({
           <button
             ref={cancelRef}
             onClick={onClose}
-            className="bg-surface-2 border border-border text-text px-4 py-2 rounded-md hover:bg-surface-2/80 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+            className="bg-surface-2 border border-border/50 text-text px-4 py-2 rounded-2xl hover:bg-surface-2/80 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="bg-danger text-white font-medium border border-danger hover:bg-danger/90 px-4 py-2 rounded-md cursor-pointer transition-colors duration-200 disabled:opacity-50 focus:ring-2 focus:ring-danger/50 focus:outline-none"
+            className="bg-danger text-white font-medium border border-danger hover:bg-danger/90 px-4 py-2 rounded-2xl cursor-pointer transition-colors duration-200 disabled:opacity-50 focus:ring-2 focus:ring-danger/50 focus:outline-none"
           >
             {loading ? 'Aguarde...' : confirmLabel}
           </button>

@@ -138,7 +138,7 @@ export default function Funnels() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-primary/10 p-2.5">
+          <div className="rounded-xl bg-primary/10 p-2.5 ring-1 ring-primary/20">
             <GitBranch className="w-6 h-6 text-primary" />
           </div>
           <div>
@@ -149,7 +149,7 @@ export default function Funnels() {
         <button
           onClick={handleCreate}
           disabled={creating}
-          className="flex items-center gap-2 bg-primary text-bg font-medium px-4 py-2 rounded-lg cursor-pointer hover:bg-primary/90 transition-colors duration-200 disabled:opacity-50"
+          className="flex items-center gap-2 bg-primary text-bg font-medium px-4 py-2.5 rounded-xl cursor-pointer hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 shadow-lg shadow-primary/20"
         >
           {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
           Novo Funil
@@ -201,7 +201,7 @@ export default function Funnels() {
             return (
               <div
                 key={funnel.id}
-                className="bg-surface border border-border rounded-lg p-5 hover:border-primary/30 transition-colors duration-200 relative"
+                className="bg-surface border border-border/50 rounded-2xl p-5 relative card-hover"
               >
                 {isLoading && (
                   <div className="absolute inset-0 bg-surface/60 rounded-lg flex items-center justify-center z-10">
@@ -225,7 +225,7 @@ export default function Funnels() {
                 <p className="text-xs text-text-muted mb-4">Criado em {formatDate(funnel.created_at)}</p>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 border-t border-border pt-3 -mx-5 px-5">
+                <div className="flex items-center gap-1 border-t border-border/30 pt-3 -mx-5 px-5">
                   <button
                     onClick={() => navigate(`/funis/${funnel.id}`)}
                     title="Editar"
