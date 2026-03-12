@@ -30,6 +30,10 @@ export async function scrapeUrl(url) {
     });
 
     if (!res.ok) {
+      if ([403, 429, 503].includes(res.status)) {
+        // These statuses often mean the page blocks plain fetch — try Puppeteer
+        throw new Error(`Fetch returned ${res.status}, trying Puppeteer`);
+      }
       throw Object.assign(new Error(`Página retornou HTTP ${res.status}`), { statusCode: 422 });
     }
 

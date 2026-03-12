@@ -167,9 +167,6 @@ export async function downloadAssets(html, pageUrl, serverOrigin) {
   }
 
   // 3. Download images from inline style background-image
-  $('[style]').each((_, el) => {
-    // We'll process these after collecting them
-  });
   const styledElements = $('[style]').toArray();
   for (const el of styledElements) {
     const style = $(el).attr('style') || '';
