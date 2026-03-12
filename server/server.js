@@ -42,22 +42,26 @@ const fastify = Fastify({
 // Initialize database on startup
 const db = getDb();
 
-// Re-publish all published pages on startup (dist/ is ephemeral on Railway)
+// Re-publish all published pages AFTER server is listening
+// (dist/ is ephemeral on Railway, but server must respond to healthcheck first)
 async function republishOnStartup() {
-  const published = db.prepare("SELECT * FROM pages WHERE status = 'published' AND html_content IS NOT NULL").all();
-  if (published.length === 0) return;
-  console.log(`Re-publishing ${published.length} pages on startup...`);
-  for (const page of published) {
-    try {
-      await publishPage(page, db);
-      console.log(`  ✓ ${page.slug}`);
-    } catch (err) {
-      console.error(`  ✗ ${page.slug}: ${err.message}`);
+  try {
+    const published = db.prepare("SELECT * FROM pages WHERE status = 'published' AND html_content IS NOT NULL").all();
+    if (published.length === 0) return;
+    console.log(`Re-publishing ${published.length} pages on startup...`);
+    for (const page of published) {
+      try {
+        await publishPage(page, db);
+        console.log(`  ✓ ${page.slug}`);
+      } catch (err) {
+        console.error(`  ✗ ${page.slug}: ${err.message}`);
+      }
     }
+    console.log('Startup re-publish complete.');
+  } catch (err) {
+    console.error('Republish on startup failed (non-fatal):', err.message);
   }
-  console.log('Startup re-publish complete.');
 }
-await republishOnStartup();
 
 // Register plugins
 await fastify.register(cors, {
@@ -142,6 +146,9 @@ try {
   fastify.log.info(`Aurion Editor server running on http://localhost:${PORT}`);
   fastify.log.info(`Admin panel: http://localhost:${PORT}/admin`);
   fastify.log.info(`API: http://localhost:${PORT}/api`);
+
+  // Re-publish pages after server is up (healthcheck can respond immediately)
+  republishOnStartup();
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);
