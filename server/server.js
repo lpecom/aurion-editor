@@ -14,6 +14,7 @@ import domainsRoutes from './routes/domains.js';
 import scriptsRoutes from './routes/scripts.js';
 import imagesRoutes from './routes/images.js';
 import categoriesRoutes from './routes/categories.js';
+import copierRoutes from './routes/copier.js';
 import { publishPage } from '../lib/publish.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -109,6 +110,7 @@ await fastify.register(domainsRoutes, { prefix: '/api' });
 await fastify.register(scriptsRoutes, { prefix: '/api' });
 await fastify.register(imagesRoutes, { prefix: '/api' });
 await fastify.register(categoriesRoutes, { prefix: '/api' });
+await fastify.register(copierRoutes, { prefix: '/api' });
 
 // Register static file serving (admin SPA + public site)
 await fastify.register(staticPlugin);
