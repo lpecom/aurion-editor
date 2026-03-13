@@ -20,6 +20,7 @@ const Scripts = lazy(() => import('./pages/resources/Scripts'));
 const Languages = lazy(() => import('./pages/resources/Languages'));
 const TranslationProviders = lazy(() => import('./pages/resources/TranslationProviders'));
 const CloudflareAccounts = lazy(() => import('./pages/integrations/CloudflareAccounts'));
+const Workers = lazy(() => import('./pages/integrations/Workers'));
 const ConversionBoosters = lazy(() => import('./pages/ConversionBoosters'));
 const ConversionBoostersHub = lazy(() => import('./pages/ConversionBoostersHub'));
 const ScriptMaker = lazy(() => import('./pages/ScriptMaker'));
@@ -94,6 +95,7 @@ export default function App() {
             <Route path="traducoes" element={<SuspenseWrapper><Translations /></SuspenseWrapper>} />
             <Route path="integracoes/provedores" element={<SuspenseWrapper><TranslationProviders /></SuspenseWrapper>} />
             <Route path="integracoes/cloudflare" element={<SuspenseWrapper><CloudflareAccounts /></SuspenseWrapper>} />
+            <Route path="integracoes/workers" element={<SuspenseWrapper><Workers /></SuspenseWrapper>} />
             <Route path="faq" element={<SuspenseWrapper><FAQ /></SuspenseWrapper>} />
           </Route>
         </Routes>

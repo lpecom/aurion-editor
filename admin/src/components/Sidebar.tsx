@@ -26,6 +26,7 @@ import {
   Bot,
   FileStack,
   GitBranch,
+  Server,
 } from 'lucide-react';
 
 interface NavItem {
@@ -74,6 +75,7 @@ const navItems: (NavItem | { separator: string })[] = [
     children: [
       { label: 'Provedores de Tradução', to: '/integracoes/provedores', icon: <Languages className="w-5 h-5" /> },
       { label: 'Cloudflare', to: '/integracoes/cloudflare', icon: <Cloud className="w-5 h-5" /> },
+      { label: 'Workers', to: '/integracoes/workers', icon: <Server className="w-5 h-5" /> },
     ],
   },
   { label: 'FAQ', to: '/faq', icon: <HelpCircle className="w-5 h-5" /> },

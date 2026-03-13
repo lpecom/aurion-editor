@@ -16,6 +16,21 @@ const WORKER_SCRIPT = `export default {
     const url = new URL(request.url);
     let slug = url.pathname.replace(/^\\/+/, '').replace(/\\/+$/, '') || 'index';
 
+    // Serve uploaded images from R2 images bucket
+    if (slug.startsWith('assets/imgs/') && env.R2_IMAGES) {
+      const imgKey = slug.replace('assets/imgs/', '');
+      const imgObj = await env.R2_IMAGES.get(imgKey);
+      if (!imgObj) return new Response('Image not found', { status: 404 });
+      const ext = imgKey.split('.').pop().toLowerCase();
+      const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', ico: 'image/x-icon' };
+      return new Response(imgObj.body, {
+        headers: {
+          'content-type': mimeMap[ext] || 'application/octet-stream',
+          'cache-control': 'public, max-age=31536000, immutable',
+        }
+      });
+    }
+
     // Check funnel rules
     const funnelObj = await env.BUCKET.get('_funnels/' + slug + '.json');
     if (funnelObj) {
@@ -356,6 +371,11 @@ export async function deployWorker(account, workerName, scriptContent, r2BucketB
       type: 'r2_bucket',
       name: 'BUCKET',
       bucket_name: r2BucketBinding,
+    },
+    {
+      type: 'r2_bucket',
+      name: 'R2_IMAGES',
+      bucket_name: R2_IMAGES_BUCKET,
     },
   ];
 
