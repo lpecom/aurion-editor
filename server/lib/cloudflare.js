@@ -222,6 +222,14 @@ function checkCloakerRules(request, rules) {
   return false;
 }`;
 
+/**
+ * Encode an R2 object key for use in the REST API URL.
+ * Encodes each path segment individually to preserve '/' separators.
+ */
+function encodeR2Key(key) {
+  return key.split('/').map(encodeURIComponent).join('/');
+}
+
 function headers(apiToken) {
   return {
     'Authorization': `Bearer ${apiToken}`,
@@ -273,7 +281,7 @@ export async function createR2Bucket(account, bucketName) {
  * @param {string} [contentType='text/html; charset=utf-8'] - MIME type for the object
  */
 export async function uploadToR2(account, bucket, key, content, contentType = 'text/html; charset=utf-8') {
-  const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
+  const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeR2Key(key)}`;
   const res = await fetch(url, {
     method: 'PUT',
     headers: {
@@ -297,7 +305,7 @@ export async function uploadToR2(account, bucket, key, content, contentType = 't
  * @returns {{ body: ReadableStream, contentType: string } | null}
  */
 export async function getFromR2(account, bucket, key) {
-  const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
+  const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeR2Key(key)}`;
   const res = await fetch(url, {
     method: 'GET',
     headers: {
@@ -341,7 +349,7 @@ export async function ensureImagesBucket(account) {
  * Delete an object from R2
  */
 export async function deleteFromR2(account, bucket, key) {
-  const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
+  const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeR2Key(key)}`;
   const res = await fetch(url, {
     method: 'DELETE',
     headers: {
