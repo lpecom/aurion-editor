@@ -88,11 +88,10 @@ export async function downloadAssets(html, pageUrl, serverOrigin) {
       const name = guessImageName(originalUrl);
       const result = await processAndSaveImage(buffer, name, mime);
       const localPath = `/${result.path}`; // e.g. /assets/imgs/uuid.jpg
-      const absolutePath = `${serverOrigin}${localPath}`;
 
-      downloadedUrls.set(originalUrl, absolutePath);
+      downloadedUrls.set(originalUrl, localPath);
       assetsDownloaded.push({ original_url: originalUrl, local_path: result.path });
-      return absolutePath;
+      return localPath;
     } catch (err) {
       warnings.push(`Failed to download ${originalUrl}: ${err.message}`);
       downloadedUrls.set(originalUrl, originalUrl); // Keep original on failure
