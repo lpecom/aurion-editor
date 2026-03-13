@@ -366,6 +366,9 @@ export async function deleteFromR2(account, bucket, key) {
  * Deploy a Worker script with R2 binding
  */
 export async function deployWorker(account, workerName, scriptContent, r2BucketBinding) {
+  // Ensure the images bucket exists before binding
+  await ensureImagesBucket(account);
+
   const bindings = [
     {
       type: 'r2_bucket',
