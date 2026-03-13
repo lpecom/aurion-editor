@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { getDb } from '../db/index.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { processAndSaveImage } from '../lib/image-processing.js';
+import { getDefaultCloudflareAccount, deleteFromR2, R2_IMAGES_BUCKET } from '../lib/cloudflare.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..'); // KEEP — used by DELETE route
@@ -54,6 +55,16 @@ export default async function imagesRoutes(fastify) {
     const filePath = path.join(ROOT, image.path);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
+    }
+
+    // Delete from R2 if Cloudflare is configured
+    try {
+      const cfAccount = getDefaultCloudflareAccount();
+      if (cfAccount) {
+        await deleteFromR2(cfAccount, R2_IMAGES_BUCKET, image.filename);
+      }
+    } catch (err) {
+      console.warn('R2 delete failed:', err.message);
     }
 
     db.prepare('DELETE FROM images WHERE id = ?').run(id);
