@@ -16,21 +16,6 @@ const WORKER_SCRIPT = `export default {
     const url = new URL(request.url);
     let slug = url.pathname.replace(/^\\/+/, '').replace(/\\/+$/, '') || 'index';
 
-    // Serve uploaded images from R2 images bucket
-    if (slug.startsWith('assets/imgs/') && env.R2_IMAGES) {
-      const imgKey = slug.replace('assets/imgs/', '');
-      const imgObj = await env.R2_IMAGES.get(imgKey);
-      if (!imgObj) return new Response('Image not found', { status: 404 });
-      const ext = imgKey.split('.').pop().toLowerCase();
-      const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', ico: 'image/x-icon' };
-      return new Response(imgObj.body, {
-        headers: {
-          'content-type': mimeMap[ext] || 'application/octet-stream',
-          'cache-control': 'public, max-age=31536000, immutable',
-        }
-      });
-    }
-
     // Check funnel rules
     const funnelObj = await env.BUCKET.get('_funnels/' + slug + '.json');
     if (funnelObj) {
@@ -157,15 +142,23 @@ const WORKER_SCRIPT = `export default {
       return new Response('Página não encontrada', { status: 404 });
     }
 
-    const contentType = slug.endsWith('.css') ? 'text/css'
-      : slug.endsWith('.js') ? 'application/javascript'
-      : slug.endsWith('.json') ? 'application/json'
+    const ext = slug.split('.').pop().toLowerCase();
+    const contentType = ext === 'css' ? 'text/css'
+      : ext === 'js' ? 'application/javascript'
+      : ext === 'json' ? 'application/json'
+      : ext === 'png' ? 'image/png'
+      : (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg'
+      : ext === 'webp' ? 'image/webp'
+      : ext === 'gif' ? 'image/gif'
+      : ext === 'svg' ? 'image/svg+xml'
+      : ext === 'ico' ? 'image/x-icon'
       : 'text/html; charset=utf-8';
 
+    const isAsset = ['png','jpg','jpeg','webp','gif','svg','ico','css','js'].includes(ext);
     return new Response(object.body, {
       headers: {
         'content-type': contentType,
-        'cache-control': 'public, max-age=3600',
+        'cache-control': isAsset ? 'public, max-age=31536000, immutable' : 'public, max-age=3600',
       }
     });
   }
@@ -366,19 +359,11 @@ export async function deleteFromR2(account, bucket, key) {
  * Deploy a Worker script with R2 binding
  */
 export async function deployWorker(account, workerName, scriptContent, r2BucketBinding) {
-  // Ensure the images bucket exists before binding
-  await ensureImagesBucket(account);
-
   const bindings = [
     {
       type: 'r2_bucket',
       name: 'BUCKET',
       bucket_name: r2BucketBinding,
-    },
-    {
-      type: 'r2_bucket',
-      name: 'R2_IMAGES',
-      bucket_name: R2_IMAGES_BUCKET,
     },
   ];
 
