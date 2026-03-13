@@ -202,7 +202,7 @@ export default function Sidebar() {
                   )}
                 </button>
                 {openMenus.has(item.label) && !collapsed && (
-                  <div className="ml-4 mt-1 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="ml-4 mt-1 space-y-1 animate-fade-in">
                     {item.children.map((child) => (
                       <NavItemLink
                         key={child.to}

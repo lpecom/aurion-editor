@@ -42,7 +42,7 @@ export default function GrapesEditor({ pageId }: GrapesEditorProps) {
           // Normalize response to expected format
           if (Array.isArray(result)) return result;
           // Single file upload response
-          return [{ src: result.url, name: result.filename || result.original_name }];
+          return [{ src: `/${result.path}`, name: result.filename || result.original_name }];
         },
         onDelete: async ({ assets }) => {
           for (const asset of assets) {

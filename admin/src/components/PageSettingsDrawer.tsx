@@ -94,7 +94,7 @@ function SectionAccordion({
         />
       </button>
       {isOpen && (
-        <div className="px-4 py-4 space-y-4 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="px-4 py-4 space-y-4 border-t border-border/50 animate-fade-in">
           {children}
         </div>
       )}
