@@ -9,6 +9,13 @@ import PageSettingsDrawer from './PageSettingsDrawer';
 import EmptyState from './ui/EmptyState';
 import Badge from './ui/Badge';
 
+interface PageDomain {
+  id: string;
+  domain: string;
+  is_primary: number;
+  source: string;
+}
+
 interface Page {
   id: string;
   title: string;
@@ -16,6 +23,7 @@ interface Page {
   type: string;
   lang: string;
   domain: string | null;
+  domains?: PageDomain[];
   status: string;
   created_at: string;
   updated_at: string;
@@ -211,7 +219,14 @@ export default function PagesList({ type }: PagesListProps) {
                     <span className="text-sm text-text-muted font-mono">/{page.slug}</span>
                   </td>
                   <td className="px-3 py-3">
-                    <span className="text-sm text-text-muted">{page.domain || '\u2014'}</span>
+                    <span className="text-sm text-text-muted">
+                      {(() => {
+                        const primaryDomain = page.domains?.find(d => d.is_primary)?.domain
+                          || page.domains?.[0]?.domain
+                          || page.domain;
+                        return primaryDomain || '\u2014';
+                      })()}
+                    </span>
                   </td>
                   <td className="px-3 py-3">
                     <span

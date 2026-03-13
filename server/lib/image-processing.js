@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb } from '../db/index.js';
+import { getDefaultCloudflareAccount, uploadToR2, ensureImagesBucket, R2_IMAGES_BUCKET } from './cloudflare.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -62,7 +63,19 @@ export async function processAndSaveImage(buffer, originalName, mimeType) {
     }
   }
 
+  // Always save locally (works in dev, acts as cache in prod)
   fs.writeFileSync(filePath, finalBuffer);
+
+  // Upload to R2 if a Cloudflare account is configured
+  try {
+    const cfAccount = getDefaultCloudflareAccount();
+    if (cfAccount) {
+      await ensureImagesBucket(cfAccount);
+      await uploadToR2(cfAccount, R2_IMAGES_BUCKET, filename, finalBuffer, mimeType);
+    }
+  } catch (err) {
+    console.warn('R2 upload failed (image saved locally):', err.message);
+  }
 
   const db = getDb();
   db.prepare(`

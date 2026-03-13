@@ -1,7 +1,11 @@
 // server/lib/cloudflare.js
 // Cloudflare Workers + R2 API wrapper
 
+import { getDb } from '../db/index.js';
+
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4';
+
+const R2_IMAGES_BUCKET = 'aurion-assets';
 
 /**
  * Worker template script — reads HTML from R2 and serves it.
@@ -254,22 +258,75 @@ export async function createR2Bucket(account, bucketName) {
 
 /**
  * Upload an object to R2
+ * @param {object} account - Cloudflare account with account_id and api_token
+ * @param {string} bucket - R2 bucket name
+ * @param {string} key - Object key
+ * @param {Buffer|string} content - File content
+ * @param {string} [contentType='text/html; charset=utf-8'] - MIME type for the object
  */
-export async function uploadToR2(account, bucket, key, htmlContent) {
+export async function uploadToR2(account, bucket, key, content, contentType = 'text/html; charset=utf-8') {
   const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
   const res = await fetch(url, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${account.api_token}`,
-      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Type': contentType,
     },
-    body: htmlContent,
+    body: content,
   });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`R2 upload failed: ${res.status} ${text}`);
   }
   return true;
+}
+
+/**
+ * Download an object from R2
+ * @param {object} account - Cloudflare account with account_id and api_token
+ * @param {string} bucket - R2 bucket name
+ * @param {string} key - Object key
+ * @returns {{ body: ReadableStream, contentType: string } | null}
+ */
+export async function getFromR2(account, bucket, key) {
+  const url = `${CF_API_BASE}/accounts/${account.account_id}/r2/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${account.api_token}`,
+    },
+  });
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    return null;
+  }
+  const buffer = Buffer.from(await res.arrayBuffer());
+  const contentType = res.headers.get('content-type') || 'application/octet-stream';
+  return { buffer, contentType };
+}
+
+/**
+ * Get the first/default cloudflare account from the database.
+ * Returns null if no account is configured.
+ */
+export function getDefaultCloudflareAccount() {
+  const db = getDb();
+  const account = db.prepare('SELECT * FROM cloudflare_accounts ORDER BY created_at ASC LIMIT 1').get();
+  return account || null;
+}
+
+/**
+ * Ensure the aurion-assets R2 bucket exists. Silently ignores "already exists" errors.
+ */
+export async function ensureImagesBucket(account) {
+  try {
+    await createR2Bucket(account, R2_IMAGES_BUCKET);
+  } catch (err) {
+    // Bucket may already exist — that's fine
+    if (!err.message.includes('already exists') && !err.message.includes('duplicate')) {
+      console.warn('Could not create R2 images bucket (may already exist):', err.message);
+    }
+  }
 }
 
 /**
@@ -361,4 +418,4 @@ export async function setWorkerCustomDomain(account, workerName, domain, zoneId)
   });
 }
 
-export { WORKER_SCRIPT };
+export { WORKER_SCRIPT, R2_IMAGES_BUCKET };

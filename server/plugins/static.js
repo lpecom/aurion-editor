@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { getDb } from '../db/index.js';
+import { getDefaultCloudflareAccount, getFromR2, R2_IMAGES_BUCKET } from '../lib/cloudflare.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -79,11 +80,42 @@ export default async function staticPlugin(fastify) {
   const adminIndexPath = path.join(adminDistDir, 'index.html');
 
   // Serve uploaded assets from /assets/imgs/
+  // First checks local filesystem, then falls back to R2
   const uploadsDir = process.env.UPLOAD_DIR || path.join(ROOT, 'assets', 'imgs');
   fastify.get('/assets/imgs/*', async (request, reply) => {
     const filename = request.url.split('?')[0].replace('/assets/imgs/', '');
     const filePath = path.join(uploadsDir, filename);
+
+    // Try local filesystem first
     if (tryServeFile(reply, filePath)) return reply;
+
+    // Fall back to R2
+    try {
+      const cfAccount = getDefaultCloudflareAccount();
+      if (cfAccount) {
+        const result = await getFromR2(cfAccount, R2_IMAGES_BUCKET, filename);
+        if (result) {
+          // Cache locally so subsequent requests are fast
+          try {
+            if (!fs.existsSync(uploadsDir)) {
+              fs.mkdirSync(uploadsDir, { recursive: true });
+            }
+            fs.writeFileSync(filePath, result.buffer);
+          } catch (cacheErr) {
+            // Non-fatal: filesystem might be read-only
+          }
+
+          reply
+            .type(result.contentType)
+            .header('cache-control', 'public, max-age=86400')
+            .send(result.buffer);
+          return reply;
+        }
+      }
+    } catch (err) {
+      // R2 fetch failed, return 404
+    }
+
     return reply.code(404).send({ error: 'Not found' });
   });
 
