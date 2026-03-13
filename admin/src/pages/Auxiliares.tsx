@@ -367,7 +367,7 @@ export default function Auxiliares() {
       {createOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCreateClose} />
-          <div className="relative bg-surface border border-border rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative bg-surface border border-border rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-5 animate-fade-in">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-text">Nova Página Auxiliar</h3>
               <button

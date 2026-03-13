@@ -311,7 +311,7 @@ export default function PublishModal({
 
             {/* Step 1: Category */}
             {step === 'category' && (
-              <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-200">
+              <div className="space-y-3 animate-fade-in">
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
@@ -355,7 +355,7 @@ export default function PublishModal({
 
             {/* Step 2: Domain */}
             {step === 'domain' && (
-              <div className={`space-y-3 animate-in fade-in ${
+              <div className={`space-y-3 animate-fade-in ${
                 slideDirection === 'left' ? 'slide-in-from-right-2' : 'slide-in-from-left-2'
               } duration-200`}>
                 {loading ? (
@@ -449,7 +449,7 @@ export default function PublishModal({
 
             {/* Step 3: Published */}
             {step === 'published' && (
-              <div className="text-center py-4 space-y-5 animate-in fade-in zoom-in-95 duration-300">
+              <div className="text-center py-4 space-y-5 animate-fade-in">
                 <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/10 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(34,197,94,0.15)]">
                   <Check className="w-10 h-10 text-primary" />
                 </div>

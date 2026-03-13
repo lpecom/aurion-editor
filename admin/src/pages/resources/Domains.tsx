@@ -220,7 +220,7 @@ export default function Domains() {
 
       {/* DNS Instructions Banner */}
       {dnsInfo && (
-        <div className="mb-4 flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="mb-4 flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg animate-fade-in">
           <div className="shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <Info className="w-4 h-4 text-primary" />
           </div>

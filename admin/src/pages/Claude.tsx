@@ -372,7 +372,7 @@ export default function Claude() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <div className="rounded-xl bg-primary/10 p-2.5">
           <Bot className="w-6 h-6 text-primary" />

@@ -87,7 +87,7 @@ export default function Healthcheck() {
   const offline = Object.values(results).filter(r => r.status === 'offline').length;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2.5">
