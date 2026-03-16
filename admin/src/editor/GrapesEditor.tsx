@@ -63,51 +63,61 @@ export default function GrapesEditor({ pageId }: GrapesEditorProps) {
         autosaveChanges: 100,
         autosaveIntervalMs: 10000,
         onSave: async ({ project }) => {
-          // Save project JSON + export HTML for publishing
-          const files = await (editor as any).runCommand?.('studio:projectFiles', { styles: 'inline' });
-          const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
-          const htmlContent = htmlFile?.content || '';
+          try {
+            // Save project JSON + export HTML for publishing
+            const files = await (editor as any).runCommand?.('studio:projectFiles', { styles: 'inline' });
+            const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
+            const htmlContent = htmlFile?.content || '';
 
-          await fetch(`/api/pages/${pageId}/content`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              html_content: htmlContent,
-              project_data: JSON.stringify(project),
-            }),
-          });
+            await fetch(`/api/pages/${pageId}/content`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                html_content: htmlContent,
+                project_data: JSON.stringify(project),
+              }),
+            });
+          } catch (err) {
+            console.error('Failed to save page:', err);
+            throw err;
+          }
         },
         onLoad: async () => {
-          const response = await fetch(`/api/pages/${pageId}`, {
-            credentials: 'include',
-          });
-          if (!response.ok) {
+          try {
+            const response = await fetch(`/api/pages/${pageId}`, {
+              credentials: 'include',
+            });
+            if (!response.ok) {
+              return {
+                project: {
+                  pages: [{ name: 'Home', component: '<h1>Nova página</h1>' }],
+                },
+              };
+            }
+            const data = await response.json();
+
+            // If we have saved project_data (GrapesJS JSON), use it
+            if (data.project_data) {
+              try {
+                const project = JSON.parse(data.project_data);
+                return { project };
+              } catch {
+                // Fall through to HTML import
+              }
+            }
+
+            // Otherwise import from raw HTML content
+            const html = data.html_content || '<h1>Nova página</h1>';
             return {
               project: {
-                pages: [{ name: 'Home', component: '<h1>Nova página</h1>' }],
+                pages: [{ name: data.title || 'Page', component: html }],
               },
             };
+          } catch (err) {
+            console.error('Failed to load page:', err);
+            throw err;
           }
-          const data = await response.json();
-
-          // If we have saved project_data (GrapesJS JSON), use it
-          if (data.project_data) {
-            try {
-              const project = JSON.parse(data.project_data);
-              return { project };
-            } catch {
-              // Fall through to HTML import
-            }
-          }
-
-          // Otherwise import from raw HTML content
-          const html = data.html_content || '<h1>Nova página</h1>';
-          return {
-            project: {
-              pages: [{ name: data.title || 'Page', component: html }],
-            },
-          };
         },
       },
       plugins: [
@@ -119,7 +129,13 @@ export default function GrapesEditor({ pageId }: GrapesEditorProps) {
     editorRef.current = editor;
 
     return () => {
-      // Cleanup: the SDK handles its own destruction
+      if (editorRef.current) {
+        try {
+          editorRef.current.destroy?.();
+        } catch {
+          // SDK cleanup failed, ignore
+        }
+      }
       editorRef.current = null;
     };
   }, [pageId]);

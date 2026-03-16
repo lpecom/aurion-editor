@@ -86,6 +86,10 @@ export default async function staticPlugin(fastify) {
     const filename = request.url.split('?')[0].replace('/assets/imgs/', '');
     const filePath = path.join(uploadsDir, filename);
 
+    if (!path.resolve(filePath).startsWith(path.resolve(uploadsDir))) {
+      return reply.code(400).send({ error: 'Invalid path' });
+    }
+
     // Try local filesystem first
     if (tryServeFile(reply, filePath)) return reply;
 
@@ -145,6 +149,9 @@ export default async function staticPlugin(fastify) {
     // Try to serve the exact file from admin/dist/
     if (relativePath) {
       const filePath = path.join(adminDistDir, relativePath);
+      if (!path.resolve(filePath).startsWith(path.resolve(adminDistDir))) {
+        return reply.code(400).send({ error: 'Invalid path' });
+      }
       if (tryServeFile(reply, filePath)) return reply;
     }
 
@@ -183,19 +190,37 @@ export default async function staticPlugin(fastify) {
       // Allow static assets for pages in this domain (CSS, JS, images within slug directories)
       const topLevelDir = requestedSlug.split('/')[0];
       if (slugs.has(topLevelDir) || slugs.has(requestedSlug)) {
-        // Serve from dist/
-        if (tryServeFile(reply, path.join(distDir, urlPath))) return reply;
-        if (tryServeFile(reply, path.join(distDir, urlPath, 'index.html'))) return reply;
-        if (tryServeFile(reply, path.join(distDir, `${urlPath}.html`))) return reply;
+        // Validate paths stay within distDir
+        const resolvedDistDir = path.resolve(distDir);
+        const candidatePaths = [
+          path.join(distDir, urlPath),
+          path.join(distDir, urlPath, 'index.html'),
+          path.join(distDir, `${urlPath}.html`),
+        ];
+        for (const candidate of candidatePaths) {
+          if (!path.resolve(candidate).startsWith(resolvedDistDir)) {
+            return reply.code(400).send({ error: 'Invalid path' });
+          }
+          if (tryServeFile(reply, candidate)) return reply;
+        }
       }
 
       return reply.code(404).type('text/html').send('<h1>Página não encontrada</h1>');
     }
 
     // Main domain — serve any page from dist/
-    if (tryServeFile(reply, path.join(distDir, urlPath))) return reply;
-    if (tryServeFile(reply, path.join(distDir, urlPath, 'index.html'))) return reply;
-    if (tryServeFile(reply, path.join(distDir, `${urlPath}.html`))) return reply;
+    const resolvedDistDir = path.resolve(distDir);
+    const mainCandidates = [
+      path.join(distDir, urlPath),
+      path.join(distDir, urlPath, 'index.html'),
+      path.join(distDir, `${urlPath}.html`),
+    ];
+    for (const candidate of mainCandidates) {
+      if (!path.resolve(candidate).startsWith(resolvedDistDir)) {
+        return reply.code(400).send({ error: 'Invalid path' });
+      }
+      if (tryServeFile(reply, candidate)) return reply;
+    }
 
     // 404 page from dist
     const notFoundPage = path.join(distDir, '404', 'index.html');

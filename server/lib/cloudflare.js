@@ -67,7 +67,7 @@ const WORKER_SCRIPT = `export default {
           }
 
           // If there's a next_href and no selector rewrites, rewrite all CTA-like links
-          if (pageConfig.next_href && (!pageConfig.rewrites.selectors || pageConfig.rewrites.selectors.length === 0)) {
+          if (pageConfig.next_href && (!pageConfig.rewrites?.selectors || pageConfig.rewrites.selectors.length === 0)) {
             // Rewrite common CTA patterns
             for (const sel of ['a.cta', 'a.btn', 'a.button', 'a[data-cta]']) {
               rewriter = rewriter.on(sel, {
@@ -314,7 +314,7 @@ export async function getFromR2(account, bucket, key) {
   });
   if (!res.ok) {
     if (res.status === 404) return null;
-    return null;
+    throw new Error(`R2 fetch failed: ${res.status}`);
   }
   const buffer = Buffer.from(await res.arrayBuffer());
   const contentType = res.headers.get('content-type') || 'application/octet-stream';

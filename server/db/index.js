@@ -11,13 +11,16 @@ let db;
 export function getDb() {
   if (db) return db;
 
-  // Use DATABASE_PATH env var (for Railway volume mount) or default to local data/
+  // Use DATABASE_PATH env var (for Railway volume mount at /data) or default to local data/
+  // On Railway, set DATABASE_PATH=/data/aurion.db and mount a volume at /data
   const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', '..', 'data', 'aurion.db');
   const dataDir = path.dirname(dbPath);
 
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
+
+  console.log(`[db] Using database: ${dbPath}`);
 
   db = new Database(dbPath);
   db.pragma('journal_mode = WAL');

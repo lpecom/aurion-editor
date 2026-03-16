@@ -1,6 +1,7 @@
 // build.js
 import path from 'node:path';
 import fs from 'node:fs';
+import { glob } from 'glob';
 import { clean } from './lib/clean.js';
 import { processAssets } from './lib/assets.js';
 import { processPages, processSinglePage } from './lib/pages.js';
@@ -64,7 +65,28 @@ export async function selectiveBuild(slug) {
   const manifestPath = path.join(distDir, 'asset-manifest.json');
   let manifest;
   if (fs.existsSync(manifestPath)) {
-    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    // Check if any asset is newer than the manifest
+    const manifestMtime = fs.statSync(manifestPath).mtimeMs;
+    const assetDirs = [path.join(srcDir, 'assets'), path.join(srcDir, 'css')].filter(d => fs.existsSync(d));
+    let stale = false;
+    for (const dir of assetDirs) {
+      const files = await glob('**/*', { cwd: dir, nodir: true });
+      for (const f of files) {
+        if (f.startsWith('imgs/')) continue; // skip uploaded images
+        if (fs.statSync(path.join(dir, f)).mtimeMs > manifestMtime) {
+          stale = true;
+          break;
+        }
+      }
+      if (stale) break;
+    }
+    if (stale) {
+      console.log('Assets changed, rebuilding manifest...');
+      manifest = await processAssets(srcDir, distDir, config.build ?? {});
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    } else {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    }
   } else {
     console.log('Processando assets...');
     if (!fs.existsSync(distDir)) {
