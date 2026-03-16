@@ -135,9 +135,26 @@ const WORKER_SCRIPT = `export default {
     if (!object) object = await env.BUCKET.get(slug + '/index');
 
     // For image paths, fall back to central IMAGES bucket (aurion-assets)
-    if (!object && env.IMAGES && slug.startsWith('assets/imgs/')) {
+    if (!object && slug.startsWith('assets/imgs/')) {
       const filename = slug.split('/').pop();
-      object = await env.IMAGES.get(filename);
+      if (env.IMAGES) {
+        object = await env.IMAGES.get(filename);
+      }
+      // Debug: return info if image still not found
+      if (!object) {
+        return new Response(JSON.stringify({
+          error: 'image_not_found',
+          slug,
+          filename,
+          hasIMAGES: !!env.IMAGES,
+          hasBUCKET: !!env.BUCKET,
+          triedBucketKey: slug,
+          triedImagesKey: filename,
+        }, null, 2), {
+          status: 404,
+          headers: { 'content-type': 'application/json' }
+        });
+      }
     }
 
     if (!object) {
