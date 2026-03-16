@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import createStudioEditor from '@grapesjs/studio-sdk';
 import { rteProseMirror, layoutSidebarButtons } from '@grapesjs/studio-sdk-plugins';
 import '@grapesjs/studio-sdk/style';
@@ -9,9 +9,39 @@ interface GrapesEditorProps {
   pageId: string;
 }
 
-export default function GrapesEditor({ pageId }: GrapesEditorProps) {
+export interface GrapesEditorRef {
+  save: () => Promise<void>;
+}
+
+const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function GrapesEditor({ pageId }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      try {
+        const files = await editor.runCommand?.('studio:projectFiles', { styles: 'inline' });
+        const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
+        const htmlContent = htmlFile?.content || '';
+        const project = await editor.getProjectData?.();
+
+        await fetch(`/api/pages/${pageId}/content`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            html_content: htmlContent,
+            project_data: JSON.stringify(project),
+          }),
+        });
+      } catch (err) {
+        console.error('Manual save failed:', err);
+        throw err;
+      }
+    },
+  }), [pageId]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -146,4 +176,6 @@ export default function GrapesEditor({ pageId }: GrapesEditorProps) {
       style={{ height: '100%', width: '100%' }}
     />
   );
-}
+});
+
+export default GrapesEditor;

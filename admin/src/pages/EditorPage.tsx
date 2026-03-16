@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Globe, Copy, Languages, Trash2, Loader2, Check } from 'lucide-react';
 import GrapesEditor from '../editor/GrapesEditor';
+import type { GrapesEditorRef } from '../editor/GrapesEditor';
 import PublishModal from '../components/PublishModal';
 import DuplicatePageModal from '../components/DuplicatePageModal';
 import TranslatePageModal from '../components/TranslatePageModal';
@@ -18,6 +19,7 @@ interface PageData {
 export default function EditorPage() {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
+  const editorRef = useRef<GrapesEditorRef>(null);
   const [page, setPage] = useState<PageData | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
@@ -36,6 +38,15 @@ export default function EditorPage() {
       }
     })();
   }, [pageId]);
+
+  const handlePublishClick = async () => {
+    try {
+      await editorRef.current?.save();
+    } catch {
+      // save failed, publish will use last saved content
+    }
+    setShowPublish(true);
+  };
 
   const handlePurgeCache = async () => {
     if (!pageId || purging) return;
@@ -109,7 +120,7 @@ export default function EditorPage() {
         </button>
 
         <button
-          onClick={() => setShowPublish(true)}
+          onClick={handlePublishClick}
           className="bg-primary text-bg hover:bg-primary/90 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
           title="Publicar"
         >
@@ -120,7 +131,7 @@ export default function EditorPage() {
 
       {/* Studio Editor */}
       <div className="flex-1 overflow-hidden">
-        <GrapesEditor pageId={pageId} />
+        <GrapesEditor ref={editorRef} pageId={pageId} />
       </div>
 
       {/* Publish Modal */}
