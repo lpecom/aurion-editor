@@ -41,9 +41,9 @@ export async function processAndSaveImage(buffer, originalName, mimeType) {
       width = metadata.width;
       height = metadata.height;
 
-      if (width > 2000 || height > 2000) {
+      if (width > 3840 || height > 3840) {
         finalBuffer = await image
-          .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+          .resize(3840, 3840, { fit: 'inside', withoutEnlargement: true })
           .toBuffer();
         const newMeta = await sharp(finalBuffer).metadata();
         width = newMeta.width;
