@@ -6,6 +6,7 @@ import type { GrapesEditorRef } from '../editor/GrapesEditor';
 import PublishModal from '../components/PublishModal';
 import DuplicatePageModal from '../components/DuplicatePageModal';
 import TranslatePageModal from '../components/TranslatePageModal';
+import { useToast } from '../components/ui/Toast';
 
 interface PageData {
   id: string;
@@ -19,6 +20,7 @@ interface PageData {
 export default function EditorPage() {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const editorRef = useRef<GrapesEditorRef>(null);
   const [page, setPage] = useState<PageData | null>(null);
   const [showPublish, setShowPublish] = useState(false);
@@ -43,7 +45,7 @@ export default function EditorPage() {
     try {
       await editorRef.current?.save();
     } catch {
-      // save failed, publish will use last saved content
+      toast('Save falhou antes de publicar — usando último conteúdo salvo', 'warning');
     }
     setShowPublish(true);
   };
@@ -56,7 +58,7 @@ export default function EditorPage() {
       setPurged(true);
       setTimeout(() => setPurged(false), 2000);
     } catch {
-      // silent
+      toast('Falha ao limpar cache', 'error');
     } finally {
       setPurging(false);
     }
@@ -131,7 +133,7 @@ export default function EditorPage() {
 
       {/* Studio Editor */}
       <div className="flex-1 overflow-hidden">
-        <GrapesEditor ref={editorRef} pageId={pageId} />
+        <GrapesEditor ref={editorRef} pageId={pageId} onWarning={(msg) => toast(msg, 'warning')} />
       </div>
 
       {/* Publish Modal */}

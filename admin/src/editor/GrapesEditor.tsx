@@ -7,13 +7,16 @@ const LICENSE_KEY = '8c93dd03c9f24371b288ff462cb73f5d078f0cafb90a42c5883923539fa
 
 interface GrapesEditorProps {
   pageId: string;
+  onWarning?: (message: string) => void;
 }
 
 export interface GrapesEditorRef {
   save: () => Promise<void>;
 }
 
-const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function GrapesEditor({ pageId }, ref) {
+const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function GrapesEditor({ pageId, onWarning }, ref) {
+  const onWarningRef = useRef(onWarning);
+  onWarningRef.current = onWarning;
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
 
@@ -80,19 +83,27 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
             // Save project JSON + export HTML for publishing
             const files = await (editor as any).runCommand?.('studio:projectFiles', { styles: 'inline' });
             const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
-            const htmlContent = htmlFile?.content || '';
+            const htmlContent = htmlFile?.content;
+
+            // Build payload — only include html_content if export succeeded
+            const payload: Record<string, string> = {
+              project_data: JSON.stringify(project),
+            };
+            if (htmlContent) {
+              payload.html_content = htmlContent;
+            } else {
+              onWarningRef.current?.('Export HTML falhou — salvando apenas dados do projeto. Re-salve antes de publicar.');
+            }
 
             await fetch(`/api/pages/${pageId}/content`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
-              body: JSON.stringify({
-                html_content: htmlContent,
-                project_data: JSON.stringify(project),
-              }),
+              body: JSON.stringify(payload),
             });
           } catch (err) {
             console.error('Failed to save page:', err);
+            onWarningRef.current?.(`Falha ao salvar: ${err instanceof Error ? err.message : 'erro desconhecido'}`);
             throw err;
           }
         },
@@ -102,6 +113,7 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
               credentials: 'include',
             });
             if (!response.ok) {
+              onWarningRef.current?.(`Falha ao carregar página (HTTP ${response.status}) — usando template padrão`);
               return {
                 project: {
                   pages: [{ name: 'Home', component: '<h1>Nova página</h1>' }],
@@ -116,7 +128,7 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
                 const project = JSON.parse(data.project_data);
                 return { project };
               } catch {
-                // Fall through to HTML import
+                onWarningRef.current?.('project_data corrompido — importando do HTML bruto');
               }
             }
 
@@ -129,6 +141,7 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
             };
           } catch (err) {
             console.error('Failed to load page:', err);
+            onWarningRef.current?.(`Falha ao carregar página: ${err instanceof Error ? err.message : 'erro desconhecido'}`);
             throw err;
           }
         },

@@ -343,15 +343,19 @@ export default async function pagesRoutes(fastify) {
 
     const { html_content, project_data } = request.body;
 
-    if (html_content && project_data) {
+    // Use explicit undefined checks — empty string is a valid value for html_content
+    const hasHtml = html_content !== undefined && html_content !== null;
+    const hasProject = project_data !== undefined && project_data !== null;
+
+    if (hasHtml && hasProject) {
       db.prepare(`
         UPDATE pages SET html_content = ?, project_data = ?, updated_at = datetime('now') WHERE id = ?
       `).run(html_content, project_data, id);
-    } else if (html_content) {
+    } else if (hasHtml) {
       db.prepare(`
         UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?
       `).run(html_content, id);
-    } else if (project_data) {
+    } else if (hasProject) {
       db.prepare(`
         UPDATE pages SET project_data = ?, updated_at = datetime('now') WHERE id = ?
       `).run(project_data, id);

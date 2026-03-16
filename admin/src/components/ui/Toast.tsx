@@ -69,12 +69,13 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
+    const duration = toast.type === 'warning' || toast.type === 'error' ? 6000 : 3000;
     const timer = setTimeout(() => {
       setVisible(false);
       setTimeout(() => onDismiss(toast.id), 200);
-    }, 3000);
+    }, duration);
     return () => clearTimeout(timer);
-  }, [toast.id, onDismiss]);
+  }, [toast.id, toast.type, onDismiss]);
 
   const Icon = ICONS[toast.type];
 
