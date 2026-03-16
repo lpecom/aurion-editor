@@ -21,27 +21,10 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
     save: async () => {
       const editor = editorRef.current;
       if (!editor) return;
-      try {
-        const files = await editor.runCommand?.('studio:projectFiles', { styles: 'inline' });
-        const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
-        const htmlContent = htmlFile?.content || '';
-        const project = await editor.getProjectData?.();
-
-        await fetch(`/api/pages/${pageId}/content`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            html_content: htmlContent,
-            project_data: JSON.stringify(project),
-          }),
-        });
-      } catch (err) {
-        console.error('Manual save failed:', err);
-        throw err;
-      }
+      // Triggers the existing onSave callback — no duplicated logic
+      await editor.store?.();
     },
-  }), [pageId]);
+  }), []);
 
   useEffect(() => {
     if (!containerRef.current) return;
