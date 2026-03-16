@@ -445,4 +445,35 @@ export async function setWorkerCustomDomain(account, workerName, domain, zoneId)
   });
 }
 
+/**
+ * Purge specific URLs from Cloudflare's edge cache
+ * @param {object} account - Cloudflare account with api_token
+ * @param {string} zoneId - Cloudflare zone ID for the domain
+ * @param {string[]} urls - Array of full URLs to purge
+ */
+export async function purgeZoneCache(account, zoneId, urls) {
+  if (!urls.length) return;
+  // CF allows max 30 URLs per purge request
+  const chunks = [];
+  for (let i = 0; i < urls.length; i += 30) {
+    chunks.push(urls.slice(i, i + 30));
+  }
+  for (const chunk of chunks) {
+    await cfFetch(account.api_token, `/zones/${zoneId}/purge_cache`, {
+      method: 'POST',
+      body: JSON.stringify({ files: chunk }),
+    });
+  }
+}
+
+/**
+ * Purge everything from a zone's edge cache
+ */
+export async function purgeZoneCacheAll(account, zoneId) {
+  return cfFetch(account.api_token, `/zones/${zoneId}/purge_cache`, {
+    method: 'POST',
+    body: JSON.stringify({ purge_everything: true }),
+  });
+}
+
 export { WORKER_SCRIPT, R2_IMAGES_BUCKET };

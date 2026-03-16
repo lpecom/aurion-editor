@@ -4,6 +4,7 @@ import { getDb } from '../db/index.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { publishPage, unpublishPage } from '../../lib/publish.js';
 import { translateHtml } from '../lib/translator.js';
+import { purgeZoneCacheAll } from '../lib/cloudflare.js';
 
 function getPageDomains(db, pageId) {
   return db.prepare(`
@@ -412,6 +413,58 @@ export default async function pagesRoutes(fastify) {
       request.log.error({ err }, 'Failed to publish page');
       return reply.code(500).send({ error: 'Failed to publish page' });
     }
+  });
+
+  // POST /api/pages/:id/purge-cache — purge CDN cache for all domains of this page
+  fastify.post('/pages/:id/purge-cache', async (request, reply) => {
+    const db = getDb();
+    const { id } = request.params;
+
+    const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(id);
+    if (!page) {
+      return reply.code(404).send({ error: 'Page not found' });
+    }
+
+    const results = [];
+
+    // Get all CF domains associated with this page
+    const pageDomains = db.prepare(`
+      SELECT d.* FROM domains d
+      JOIN page_domains pd ON pd.domain_id = d.id
+      WHERE pd.page_id = ? AND d.cloudflare_account_id IS NOT NULL AND d.cloudflare_zone_id IS NOT NULL
+    `).all(id);
+
+    let cfDomains = [...pageDomains];
+
+    // Also check category domains
+    if (page.category_id) {
+      const catDomains = db.prepare(`
+        SELECT d.* FROM domains d
+        JOIN category_domains cd ON cd.domain_id = d.id
+        WHERE cd.category_id = ? AND d.cloudflare_account_id IS NOT NULL AND d.cloudflare_zone_id IS NOT NULL
+      `).all(page.category_id);
+      for (const cd of catDomains) {
+        if (!cfDomains.find(d => d.id === cd.id)) cfDomains.push(cd);
+      }
+    }
+
+    for (const domain of cfDomains) {
+      try {
+        const cfAccount = db.prepare('SELECT * FROM cloudflare_accounts WHERE id = ?').get(domain.cloudflare_account_id);
+        if (cfAccount) {
+          await purgeZoneCacheAll(cfAccount, domain.cloudflare_zone_id);
+          results.push({ domain: domain.domain, status: 'ok' });
+        }
+      } catch (err) {
+        results.push({ domain: domain.domain, status: 'error', message: err.message });
+      }
+    }
+
+    if (cfDomains.length === 0) {
+      return reply.code(400).send({ error: 'Nenhum domínio com Cloudflare configurado' });
+    }
+
+    return { ok: true, results };
   });
 
   // --- Page Domain Association ---

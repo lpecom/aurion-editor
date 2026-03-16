@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Settings, Pencil, Copy, FileText, Newspaper, Languages } from 'lucide-react';
+import { Plus, Search, Settings, Pencil, Copy, FileText, Newspaper, Languages, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
 import CreatePageModal from './CreatePageModal';
 import DuplicatePageModal from './DuplicatePageModal';
@@ -8,6 +8,7 @@ import TranslatePageModal from './TranslatePageModal';
 import PageSettingsDrawer from './PageSettingsDrawer';
 import EmptyState from './ui/EmptyState';
 import Badge from './ui/Badge';
+import ConfirmDialog from './ui/ConfirmDialog';
 
 interface PageDomain {
   id: string;
@@ -53,6 +54,8 @@ export default function PagesList({ type }: PagesListProps) {
   const [settingsPageId, setSettingsPageId] = useState<string | null>(null);
   const [duplicatePage, setDuplicatePage] = useState<{ id: string; title: string } | null>(null);
   const [translatePage, setTranslatePage] = useState<{ id: string; title: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const title = type === 'pv' ? 'Páginas de Venda' : 'Advertoriais';
   const createLabel = type === 'pv' ? 'Nova Página' : 'Novo Advertorial';
@@ -69,6 +72,20 @@ export default function PagesList({ type }: PagesListProps) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar páginas');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/pages/${deleteTarget.id}`);
+      setPages((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir página');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -274,6 +291,14 @@ export default function PagesList({ type }: PagesListProps) {
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
+                      <button
+                        onClick={() => setDeleteTarget({ id: page.id, title: page.title })}
+                        aria-label={`Excluir ${page.title}`}
+                        title={`Excluir ${page.title}`}
+                        className="p-1.5 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -301,6 +326,14 @@ export default function PagesList({ type }: PagesListProps) {
         onClose={() => setTranslatePage(null)}
         pageId={translatePage?.id || ''}
         pageTitle={translatePage?.title || ''}
+      />
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        loading={deleting}
+        title="Excluir página"
+        message={`Tem certeza que deseja excluir "${deleteTarget?.title}"? Se estiver publicada, será despublicada automaticamente. Esta ação não pode ser desfeita.`}
       />
     </div>
   );
