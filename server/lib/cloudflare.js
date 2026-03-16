@@ -32,7 +32,7 @@ export default {
       return new Response(object.body, {
         headers: {
           'content-type': CONTENT_TYPES[ext] || 'application/octet-stream',
-          'cache-control': 'public, max-age=31536000, immutable',
+          'cache-control': 'no-store, no-cache, must-revalidate',
         }
       });
     }
@@ -120,7 +120,7 @@ export default {
           const cookieHeader = '_aur_sid=' + sessionId + '; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000';
           const headers = new Headers(response.headers);
           headers.set('Set-Cookie', cookieHeader);
-          headers.set('Cache-Control', 'public, max-age=3600');
+          headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
           return new Response(response.body, { status: 200, headers });
         }
       }
@@ -142,7 +142,7 @@ export default {
               if (safePage) return new Response(safePage.body, {
                 headers: {
                   'content-type': 'text/html; charset=utf-8',
-                  'cache-control': 'public, max-age=3600',
+                  'cache-control': 'no-store, no-cache, must-revalidate',
                 }
               });
             }
@@ -161,7 +161,7 @@ export default {
       const notFound = await env.BUCKET.get('404');
       if (notFound) return new Response(notFound.body, {
         status: 404,
-        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' }
+        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store, no-cache, must-revalidate' }
       });
       return new Response('Página não encontrada', { status: 404 });
     }
@@ -169,7 +169,7 @@ export default {
     return new Response(object.body, {
       headers: {
         'content-type': 'text/html; charset=utf-8',
-        'cache-control': 'public, max-age=3600',
+        'cache-control': 'no-store, no-cache, must-revalidate',
       }
     });
   }
