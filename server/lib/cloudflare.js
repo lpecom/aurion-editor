@@ -11,10 +11,31 @@ const R2_IMAGES_BUCKET = 'aurion-assets';
  * Worker template script — reads HTML from R2 and serves it.
  * The BUCKET binding is configured when deploying the worker.
  */
-const WORKER_SCRIPT = `export default {
-  async fetch(request, env) {
+const WORKER_SCRIPT = `
+const CONTENT_TYPES = {
+  css: 'text/css', js: 'application/javascript', json: 'application/json',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp',
+  gif: 'image/gif', svg: 'image/svg+xml', ico: 'image/x-icon',
+};
+const ASSET_EXTS = new Set(['png','jpg','jpeg','webp','gif','svg','ico','css','js']);
+
+export default {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     let slug = url.pathname.replace(/^\\/+/, '').replace(/\\/+$/, '') || 'index';
+
+    // Fast path: assets don't need funnel/cloaker checks
+    const ext = slug.includes('.') ? slug.split('.').pop().toLowerCase() : '';
+    if (ASSET_EXTS.has(ext)) {
+      const object = await env.BUCKET.get(slug);
+      if (!object) return new Response('Not found', { status: 404 });
+      return new Response(object.body, {
+        headers: {
+          'content-type': CONTENT_TYPES[ext] || 'application/octet-stream',
+          'cache-control': 'public, max-age=31536000, immutable',
+        }
+      });
+    }
 
     // Check funnel rules
     const funnelObj = await env.BUCKET.get('_funnels/' + slug + '.json');
@@ -23,83 +44,83 @@ const WORKER_SCRIPT = `export default {
       if (funnel.status === 'active') {
         const pageConfig = funnel.pages[slug];
         if (pageConfig) {
-          // Get or create session cookie
           const cookies = parseCookies(request.headers.get('Cookie') || '');
           let sessionId = cookies['_aur_sid'];
-          const isNew = !sessionId;
           if (!sessionId) sessionId = crypto.randomUUID();
 
-          // Determine what to serve
           const serveSlug = pageConfig.serve_slug || slug;
           const pageObj = await env.BUCKET.get(serveSlug);
           if (!pageObj) return new Response('Page not found', { status: 404 });
 
-          // Apply link rewrites using HTMLRewriter
           let response = new Response(pageObj.body, {
             headers: { 'content-type': 'text/html; charset=utf-8' }
           });
 
-          let rewriter = new HTMLRewriter();
+          // Apply rewrites only if needed
+          const hasSelectors = pageConfig.rewrites?.selectors?.length > 0;
+          const hasAuto = pageConfig.rewrites?.auto && Object.keys(pageConfig.rewrites.auto).length > 0;
+          const hasCta = pageConfig.next_href && !hasSelectors;
 
-          // Selector-based rewrites (take priority)
-          if (pageConfig.rewrites && pageConfig.rewrites.selectors) {
-            for (const rule of pageConfig.rewrites.selectors) {
-              rewriter = rewriter.on(rule.pattern, {
-                element(el) { el.setAttribute('href', rule.href); }
-              });
-            }
-          }
+          if (hasSelectors || hasAuto || hasCta) {
+            let rewriter = new HTMLRewriter();
 
-          // Auto rewrites for internal slug links
-          if (pageConfig.rewrites && pageConfig.rewrites.auto) {
-            for (const [oldHref, newHref] of Object.entries(pageConfig.rewrites.auto)) {
-              rewriter = rewriter.on('a[href="' + oldHref + '"]', {
-                element(el) { el.setAttribute('href', newHref); }
-              });
-              // Also match without leading slash
-              const noSlash = oldHref.replace(/^\\//, '');
-              if (noSlash !== oldHref) {
-                rewriter = rewriter.on('a[href="' + noSlash + '"]', {
-                  element(el) { el.setAttribute('href', newHref); }
+            if (hasSelectors) {
+              for (const rule of pageConfig.rewrites.selectors) {
+                rewriter = rewriter.on(rule.pattern, {
+                  element(el) { el.setAttribute('href', rule.href); }
                 });
               }
             }
-          }
 
-          // If there's a next_href and no selector rewrites, rewrite all CTA-like links
-          if (pageConfig.next_href && (!pageConfig.rewrites?.selectors || pageConfig.rewrites.selectors.length === 0)) {
-            // Rewrite common CTA patterns
-            for (const sel of ['a.cta', 'a.btn', 'a.button', 'a[data-cta]']) {
-              rewriter = rewriter.on(sel, {
-                element(el) { el.setAttribute('href', pageConfig.next_href); }
-              });
+            if (hasAuto) {
+              for (const [oldHref, newHref] of Object.entries(pageConfig.rewrites.auto)) {
+                rewriter = rewriter.on('a[href="' + oldHref + '"]', {
+                  element(el) { el.setAttribute('href', newHref); }
+                });
+                const noSlash = oldHref.replace(/^\\//, '');
+                if (noSlash !== oldHref) {
+                  rewriter = rewriter.on('a[href="' + noSlash + '"]', {
+                    element(el) { el.setAttribute('href', newHref); }
+                  });
+                }
+              }
             }
+
+            if (hasCta) {
+              for (const sel of ['a.cta', 'a.btn', 'a.button', 'a[data-cta]']) {
+                rewriter = rewriter.on(sel, {
+                  element(el) { el.setAttribute('href', pageConfig.next_href); }
+                });
+              }
+            }
+
+            response = rewriter.transform(response);
           }
 
-          response = rewriter.transform(response);
-
-          // Write lead state to KV if available
+          // KV tracking — fire-and-forget via waitUntil (doesn't block response)
           if (env.FUNNEL_KV) {
-            const kvKey = 'funnel:' + funnel.funnel_id + ':' + sessionId;
-            try {
-              const existing = await env.FUNNEL_KV.get(kvKey, 'json');
-              const state = existing || {
-                funnel_id: funnel.funnel_id,
-                visited: [],
-                tags: [],
-                first_seen: new Date().toISOString(),
-                last_seen: new Date().toISOString()
-              };
-              if (!state.visited.includes(slug)) state.visited.push(slug);
-              state.last_seen = new Date().toISOString();
-              await env.FUNNEL_KV.put(kvKey, JSON.stringify(state), { expirationTtl: (funnel.kv_ttl_days || 30) * 86400 });
-            } catch (e) { /* KV write failure is non-fatal */ }
+            ctx.waitUntil((async () => {
+              try {
+                const kvKey = 'funnel:' + funnel.funnel_id + ':' + sessionId;
+                const existing = await env.FUNNEL_KV.get(kvKey, 'json');
+                const state = existing || {
+                  funnel_id: funnel.funnel_id,
+                  visited: [],
+                  tags: [],
+                  first_seen: new Date().toISOString(),
+                  last_seen: new Date().toISOString()
+                };
+                if (!state.visited.includes(slug)) state.visited.push(slug);
+                state.last_seen = new Date().toISOString();
+                await env.FUNNEL_KV.put(kvKey, JSON.stringify(state), { expirationTtl: (funnel.kv_ttl_days || 30) * 86400 });
+              } catch (e) { /* non-fatal */ }
+            })());
           }
 
-          // Set session cookie
           const cookieHeader = '_aur_sid=' + sessionId + '; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000';
           const headers = new Headers(response.headers);
           headers.set('Set-Cookie', cookieHeader);
+          headers.set('Cache-Control', 'public, max-age=3600');
           return new Response(response.body, { status: 200, headers });
         }
       }
@@ -119,7 +140,10 @@ const WORKER_SCRIPT = `export default {
             if (rules.action === 'safe_page' && rules.safe_page_slug) {
               const safePage = await env.BUCKET.get(rules.safe_page_slug);
               if (safePage) return new Response(safePage.body, {
-                headers: { 'content-type': 'text/html; charset=utf-8' }
+                headers: {
+                  'content-type': 'text/html; charset=utf-8',
+                  'cache-control': 'public, max-age=3600',
+                }
               });
             }
             return new Response('', { status: 403 });
@@ -130,35 +154,22 @@ const WORKER_SCRIPT = `export default {
       // Cloaker error should not break page serving
     }
 
-    // Try exact match, then with /index
+    // Serve page from R2
     let object = await env.BUCKET.get(slug);
     if (!object) object = await env.BUCKET.get(slug + '/index');
     if (!object) {
       const notFound = await env.BUCKET.get('404');
       if (notFound) return new Response(notFound.body, {
         status: 404,
-        headers: { 'content-type': 'text/html; charset=utf-8' }
+        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' }
       });
       return new Response('Página não encontrada', { status: 404 });
     }
 
-    const ext = slug.split('.').pop().toLowerCase();
-    const contentType = ext === 'css' ? 'text/css'
-      : ext === 'js' ? 'application/javascript'
-      : ext === 'json' ? 'application/json'
-      : ext === 'png' ? 'image/png'
-      : (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg'
-      : ext === 'webp' ? 'image/webp'
-      : ext === 'gif' ? 'image/gif'
-      : ext === 'svg' ? 'image/svg+xml'
-      : ext === 'ico' ? 'image/x-icon'
-      : 'text/html; charset=utf-8';
-
-    const isAsset = ['png','jpg','jpeg','webp','gif','svg','ico','css','js'].includes(ext);
     return new Response(object.body, {
       headers: {
-        'content-type': contentType,
-        'cache-control': isAsset ? 'public, max-age=31536000, immutable' : 'public, max-age=3600',
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'public, max-age=3600',
       }
     });
   }
