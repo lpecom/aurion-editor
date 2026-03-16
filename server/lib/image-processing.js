@@ -81,9 +81,12 @@ export async function processAndSaveImage(buffer, originalName, mimeType) {
     if (cfAccount) {
       await ensureImagesBucket(cfAccount);
       await uploadToR2(cfAccount, R2_IMAGES_BUCKET, filename, finalBuffer, mimeType);
+      console.log(`[images] R2 upload OK: ${filename} → ${R2_IMAGES_BUCKET}`);
+    } else {
+      console.warn('[images] No Cloudflare account configured, image saved locally only');
     }
   } catch (err) {
-    console.warn('R2 upload failed (image saved locally):', err.message);
+    console.error(`[images] R2 upload FAILED for ${filename}: ${err.message}`);
   }
 
   const db = getDb();
