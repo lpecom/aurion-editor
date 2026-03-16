@@ -20,9 +20,13 @@ export default async function authRoutes(fastify) {
     const { username, password } = request.body;
 
     const adminUser = process.env.ADMIN_USER || 'admin';
-    const adminPass = process.env.ADMIN_PASS || 'changeme';
+    const adminPass = process.env.ADMIN_PASS;
+    if (!adminPass) {
+      console.warn('WARNING: ADMIN_PASS not set! Using insecure default. Set ADMIN_PASS env var in production.');
+    }
+    const effectivePass = adminPass || 'changeme';
 
-    if (username !== adminUser || password !== adminPass) {
+    if (username !== adminUser || password !== effectivePass) {
       return reply.code(401).send({ error: 'Invalid credentials' });
     }
 
@@ -39,6 +43,7 @@ export default async function authRoutes(fastify) {
       .setCookie('session_token', token, {
         path: '/',
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 24 * 60 * 60,
       })

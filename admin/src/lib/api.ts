@@ -15,12 +15,11 @@ async function request<T>(
 ): Promise<T> {
   const { retries = 1, timeout = 15000, ...fetchOptions } = options || {};
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
     try {
       const res = await fetch(`${API_BASE}${path}`, {
         ...fetchOptions,
@@ -54,7 +53,10 @@ async function request<T>(
       // Don't retry on client errors (4xx) or abort
       if (err instanceof ApiError && err.status < 500) throw err;
       if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new ApiError('Tempo limite da requisição excedido', 408);
+        // Only throw abort error on the last attempt; otherwise retry
+        if (attempt >= retries) {
+          throw new ApiError('Tempo limite da requisição excedido', 408);
+        }
       }
 
       // Retry with exponential backoff on server errors

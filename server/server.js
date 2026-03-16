@@ -112,6 +112,9 @@ try {
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`Server running on port ${PORT}`);
   console.log(`Admin: http://localhost:${PORT}/admin`);
+  console.log(`Database: ${process.env.DATABASE_PATH || 'data/aurion.db (ephemeral!)'}`);
+  console.log(`Uploads: ${process.env.UPLOAD_DIR || 'assets/imgs (ephemeral!)'}`);
+
 } catch (err) {
   console.error('Failed to start:', err);
   process.exit(1);

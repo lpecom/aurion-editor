@@ -8,12 +8,14 @@ import { getDefaultCloudflareAccount, uploadToR2, ensureImagesBucket, R2_IMAGES_
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
+// Use UPLOAD_DIR env var (for Railway volume mount at /data/imgs) or default to local assets/imgs
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(ROOT, 'assets', 'imgs');
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
+console.log(`[images] Using upload dir: ${UPLOAD_DIR}`);
 
 /**
  * Process an image buffer: optimize with Sharp, save to disk, register in DB.
@@ -24,7 +26,14 @@ if (!fs.existsSync(UPLOAD_DIR)) {
  */
 export async function processAndSaveImage(buffer, originalName, mimeType) {
   const id = randomUUID();
-  const ext = path.extname(originalName).toLowerCase() || '.jpg';
+  const MIME_TO_EXT = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'image/svg+xml': '.svg',
+  };
+  const ext = MIME_TO_EXT[mimeType] || path.extname(originalName).toLowerCase() || '.jpg';
   const filename = `${id}${ext}`;
   const filePath = path.join(UPLOAD_DIR, filename);
   const relativePath = `assets/imgs/${filename}`;
@@ -41,9 +50,9 @@ export async function processAndSaveImage(buffer, originalName, mimeType) {
       width = metadata.width;
       height = metadata.height;
 
-      if (width > 2000 || height > 2000) {
+      if (width > 3840 || height > 3840) {
         finalBuffer = await image
-          .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+          .resize(3840, 3840, { fit: 'inside', withoutEnlargement: true })
           .toBuffer();
         const newMeta = await sharp(finalBuffer).metadata();
         width = newMeta.width;

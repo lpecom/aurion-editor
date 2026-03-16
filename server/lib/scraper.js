@@ -22,7 +22,7 @@ export async function scrapeUrl(url) {
 
   const res = await fetch(url, {
     headers: { 'User-Agent': USER_AGENT },
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(300000),
     redirect: 'follow',
   });
 

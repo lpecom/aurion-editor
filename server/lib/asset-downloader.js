@@ -13,7 +13,7 @@ const FONT_CDN_PATTERNS = [
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const ASSET_TIMEOUT = 10000; // 10s
+const ASSET_TIMEOUT = 300000; // 5min
 
 function isAbsoluteUrl(url) {
   return url.startsWith('http://') || url.startsWith('https://');
