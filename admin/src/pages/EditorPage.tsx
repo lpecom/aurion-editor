@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Globe, Copy, Languages } from 'lucide-react';
+import { ArrowLeft, Globe, Copy, Languages, Trash2, Loader2, Check } from 'lucide-react';
 import GrapesEditor from '../editor/GrapesEditor';
 import PublishModal from '../components/PublishModal';
 import DuplicatePageModal from '../components/DuplicatePageModal';
@@ -22,6 +22,8 @@ export default function EditorPage() {
   const [showPublish, setShowPublish] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
   const [showTranslate, setShowTranslate] = useState(false);
+  const [purging, setPurging] = useState(false);
+  const [purged, setPurged] = useState(false);
 
   useEffect(() => {
     if (!pageId) return;
@@ -34,6 +36,20 @@ export default function EditorPage() {
       }
     })();
   }, [pageId]);
+
+  const handlePurgeCache = async () => {
+    if (!pageId || purging) return;
+    setPurging(true);
+    try {
+      await fetch(`/api/pages/${pageId}/purge-cache`, { method: 'POST', credentials: 'include' });
+      setPurged(true);
+      setTimeout(() => setPurged(false), 2000);
+    } catch {
+      // silent
+    } finally {
+      setPurging(false);
+    }
+  };
 
   if (!pageId) return null;
 
@@ -70,6 +86,26 @@ export default function EditorPage() {
         >
           <Copy size={13} />
           Duplicar
+        </button>
+
+        <button
+          onClick={handlePurgeCache}
+          disabled={purging}
+          className={`border px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+            purged
+              ? 'border-primary text-primary bg-primary/10'
+              : 'border-border text-text-muted hover:text-text hover:bg-surface-2'
+          }`}
+          title="Limpar Cache CDN"
+        >
+          {purging ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : purged ? (
+            <Check size={13} />
+          ) : (
+            <Trash2 size={13} />
+          )}
+          {purged ? 'Cache limpo!' : 'Limpar Cache'}
         </button>
 
         <button
