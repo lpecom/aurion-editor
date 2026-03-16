@@ -22,25 +22,26 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
 
   useImperativeHandle(ref, () => ({
     save: async () => {
-      const editor = editorRef.current;
-      if (!editor) return;
-      // Triggers the existing onSave callback — no duplicated logic
-      await editor.store?.();
+      const gjsEditor = editorRef.current;
+      if (!gjsEditor) return;
+      await gjsEditor.store();
     },
   }), []);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Ensure container has a unique ID for the SDK
     const containerId = `studio-editor-${pageId}`;
     containerRef.current.id = containerId;
 
-    const editor = createStudioEditor({
+    createStudioEditor({
       root: `#${containerId}`,
       licenseKey: LICENSE_KEY,
       project: {
         type: 'web',
+      },
+      onEditor: (gjsEditor) => {
+        editorRef.current = gjsEditor;
       },
       assets: {
         storageType: 'self',
@@ -55,15 +56,12 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
             body,
           });
           const result = await response.json();
-          // Normalize response to expected format
           if (Array.isArray(result)) return result;
-          // Single file upload response
           return [{ src: `/${result.path}`, name: result.filename || result.original_name }];
         },
         onDelete: async ({ assets }) => {
           for (const asset of assets) {
             const src = asset.getSrc();
-            // Extract image ID from URL if possible
             const match = src.match(/\/api\/images\/([^/]+)/);
             if (match) {
               await fetch(`/api/images/${match[1]}`, {
@@ -78,14 +76,12 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
         type: 'self',
         autosaveChanges: 100,
         autosaveIntervalMs: 10000,
-        onSave: async ({ project }) => {
+        onSave: async ({ project, editor: gjsEditor }) => {
           try {
-            // Save project JSON + export HTML for publishing
-            const files = await (editor as any).runCommand?.('studio:projectFiles', { styles: 'inline' });
+            const files = await gjsEditor.runCommand('studio:projectFiles', { styles: 'inline' });
             const htmlFile = files?.find((f: any) => f.mimeType === 'text/html');
             const htmlContent = htmlFile?.content;
 
-            // Build payload — only include html_content if export succeeded
             const payload: Record<string, string> = {
               project_data: JSON.stringify(project),
             };
@@ -122,7 +118,6 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
             }
             const data = await response.json();
 
-            // If we have saved project_data (GrapesJS JSON), use it
             if (data.project_data) {
               try {
                 const project = JSON.parse(data.project_data);
@@ -132,7 +127,6 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
               }
             }
 
-            // Otherwise import from raw HTML content
             const html = data.html_content || '<h1>Nova página</h1>';
             return {
               project: {
@@ -151,8 +145,6 @@ const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(function Gra
         layoutSidebarButtons.init({}),
       ],
     });
-
-    editorRef.current = editor;
 
     return () => {
       if (editorRef.current) {
