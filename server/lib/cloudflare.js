@@ -140,32 +140,8 @@ const WORKER_SCRIPT = `export default {
       if (env.IMAGES) {
         object = await env.IMAGES.get(filename);
       }
-      // Debug: return info if image still not found
       if (!object) {
-        let imagesKeys = [];
-        let bucketKeys = [];
-        try {
-          const il = await env.IMAGES.list({ prefix: filename.substring(0, 8), limit: 10 });
-          imagesKeys = il.objects.map(o => o.key);
-        } catch (e) { imagesKeys = ['list_error: ' + e.message]; }
-        try {
-          const bl = await env.BUCKET.list({ prefix: 'assets/', limit: 10 });
-          bucketKeys = bl.objects.map(o => o.key);
-        } catch (e) { bucketKeys = ['list_error: ' + e.message]; }
-        return new Response(JSON.stringify({
-          error: 'image_not_found',
-          slug,
-          filename,
-          hasIMAGES: !!env.IMAGES,
-          hasBUCKET: !!env.BUCKET,
-          triedBucketKey: slug,
-          triedImagesKey: filename,
-          imagesKeys,
-          bucketKeys,
-        }, null, 2), {
-          status: 404,
-          headers: { 'content-type': 'application/json' }
-        });
+        // Image not found in either bucket
       }
     }
 
