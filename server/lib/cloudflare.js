@@ -133,6 +133,13 @@ const WORKER_SCRIPT = `export default {
     // Try exact match, then with /index
     let object = await env.BUCKET.get(slug);
     if (!object) object = await env.BUCKET.get(slug + '/index');
+
+    // For image paths, fall back to central IMAGES bucket (aurion-assets)
+    if (!object && env.IMAGES && slug.startsWith('assets/imgs/')) {
+      const filename = slug.split('/').pop();
+      object = await env.IMAGES.get(filename);
+    }
+
     if (!object) {
       const notFound = await env.BUCKET.get('404');
       if (notFound) return new Response(notFound.body, {
@@ -372,6 +379,11 @@ export async function deployWorker(account, workerName, scriptContent, r2BucketB
       type: 'r2_bucket',
       name: 'BUCKET',
       bucket_name: r2BucketBinding,
+    },
+    {
+      type: 'r2_bucket',
+      name: 'IMAGES',
+      bucket_name: R2_IMAGES_BUCKET,
     },
   ];
 
