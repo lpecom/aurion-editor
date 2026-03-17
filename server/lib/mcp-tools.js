@@ -59,7 +59,7 @@ export const MCP_TOOLS = [
   },
   {
     name: 'edit_page',
-    description: 'Edit an existing page',
+    description: 'Edit an existing page. When html_content is provided, project_data is automatically synced (set to null) so the editor re-imports from HTML on next open.',
     inputSchema: {
       type: 'object',
       required: ['id'],
@@ -68,6 +68,7 @@ export const MCP_TOOLS = [
         title: { type: 'string' },
         slug: { type: 'string' },
         html_content: { type: 'string' },
+        project_data: { type: 'string', description: 'GrapesJS project JSON. If omitted but html_content is provided, project_data is cleared so editor re-imports from HTML.' },
         lang: { type: 'string' },
         frontmatter: { type: 'string' },
       },
@@ -270,11 +271,16 @@ export async function executeTool(toolName, params, db, apiKey) {
     case 'edit_page': {
       const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(params.id);
       if (!page) throw new Error('Page not found');
-      const fields = ['title', 'slug', 'html_content', 'lang', 'frontmatter'];
+      const fields = ['title', 'slug', 'html_content', 'project_data', 'lang', 'frontmatter'];
       const updates = [];
       const values = [];
       for (const f of fields) {
         if (params[f] !== undefined) { updates.push(`${f} = ?`); values.push(params[f]); }
+      }
+      // When html_content is edited but project_data is not explicitly provided,
+      // clear project_data so GrapesJS re-imports from html_content on next editor open
+      if (params.html_content && !params.project_data) {
+        updates.push('project_data = NULL');
       }
       if (updates.length === 0) throw new Error('No fields to update');
       updates.push("updated_at = datetime('now')");
