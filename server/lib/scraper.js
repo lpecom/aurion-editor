@@ -57,7 +57,7 @@ async function scrapeWithBrowser(url) {
 
     await page.goto(url, {
       waitUntil: 'networkidle2',
-      timeout: 60000,
+      timeout: 0,
     });
 
     // Wait a bit more for late-rendering frameworks
