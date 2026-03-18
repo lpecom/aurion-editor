@@ -42,7 +42,7 @@ const loggerConfig = isProd
 const fastify = Fastify({
   logger: loggerConfig,
   bodyLimit: 50 * 1024 * 1024,
-  requestTimeout: 0,        // no timeout - copier/publish can take a long time
+  requestTimeout: 1800000,   // 30 min
   keepAliveTimeout: 300000,
 });
 

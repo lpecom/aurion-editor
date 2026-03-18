@@ -56,12 +56,25 @@ async function scrapeWithBrowser(url) {
     await page.setViewport({ width: 1440, height: 900 });
 
     await page.goto(url, {
-      waitUntil: 'networkidle2',
-      timeout: 0,
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
     });
 
-    // Wait a bit more for late-rendering frameworks
-    await page.evaluate(() => new Promise(r => setTimeout(r, 2000)));
+    // Wait for the SPA to render — check for content appearing in the root div
+    await page.waitForFunction(
+      () => {
+        const root = document.querySelector('#root, #app, #__next, #__nuxt, [data-reactroot]');
+        if (root && root.children.length > 0 && root.innerHTML.length > 100) return true;
+        // Fallback: check if body has meaningful content
+        return document.body.innerText.trim().length > 200;
+      },
+      { timeout: 15000 }
+    ).catch(() => {
+      // If content check times out, just proceed with whatever we have
+    });
+
+    // Small extra wait for async renders
+    await page.evaluate(() => new Promise(r => setTimeout(r, 1000)));
 
     const html = await page.content();
     return { html, method: 'puppeteer' };
