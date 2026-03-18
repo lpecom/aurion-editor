@@ -1,6 +1,5 @@
 [phases.setup]
 aptPkgs = [
-  "chromium",
   "libnss3",
   "libatk1.0-0",
   "libatk-bridge2.0-0",
@@ -15,8 +14,5 @@ aptPkgs = [
   "libcairo2",
   "libasound2t64",
   "libxshmfence1",
+  "fonts-liberation",
 ]
-
-[variables]
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium-browser"

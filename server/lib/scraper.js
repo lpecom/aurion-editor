@@ -46,18 +46,9 @@ async function scrapeWithBrowser(url) {
         '--single-process',
       ],
     };
-    // Use system Chromium if available (Railway/Nixpacks)
-    const chromePaths = [
-      process.env.PUPPETEER_EXECUTABLE_PATH,
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/google-chrome',
-    ].filter(Boolean);
-    const { existsSync } = await import('node:fs');
-    const foundPath = chromePaths.find(p => existsSync(p));
-    if (foundPath) {
-      launchOpts.executablePath = foundPath;
+    // Use custom executable path if set, otherwise let Puppeteer use its bundled Chromium
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     }
     browser = await puppeteer.launch(launchOpts);
     const page = await browser.newPage();
