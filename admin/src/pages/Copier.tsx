@@ -96,7 +96,7 @@ export default function Copier() {
 
     try {
       setLoadingMessage('Scraping e processando...');
-      const result = await api.post<ScrapeResult>('/copier/scrape', { url: url.trim() });
+      const result = await api.post<ScrapeResult>('/copier/scrape', { url: url.trim() }, { timeout: 120000 });
 
       setScrapeResult(result);
       setTitle(result.original_title || '');
