@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Globe, Copy, Languages, Trash2, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Globe, Copy, Languages, Trash2, Loader2, Check, Code } from 'lucide-react';
 import GrapesEditor from '../editor/GrapesEditor';
 import type { GrapesEditorRef } from '../editor/GrapesEditor';
 import PublishModal from '../components/PublishModal';
@@ -28,6 +28,9 @@ export default function EditorPage() {
   const [showTranslate, setShowTranslate] = useState(false);
   const [purging, setPurging] = useState(false);
   const [purged, setPurged] = useState(false);
+  const [showCodeEditor, setShowCodeEditor] = useState(false);
+  const [codeContent, setCodeContent] = useState('');
+  const [codeSaving, setCodeSaving] = useState(false);
 
   useEffect(() => {
     if (!pageId) return;
@@ -48,6 +51,43 @@ export default function EditorPage() {
       toast('Save falhou antes de publicar — usando último conteúdo salvo', 'warning');
     }
     setShowPublish(true);
+  };
+
+  const handleOpenCode = async () => {
+    if (!pageId) return;
+    try {
+      const res = await fetch(`/api/pages/${pageId}`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setCodeContent(data.html_content || '');
+        setShowCodeEditor(true);
+      }
+    } catch {
+      toast('Falha ao carregar código', 'error');
+    }
+  };
+
+  const handleSaveCode = async () => {
+    if (!pageId) return;
+    setCodeSaving(true);
+    try {
+      const res = await fetch(`/api/pages/${pageId}/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ html_content: codeContent }),
+      });
+      if (res.ok) {
+        toast('Código salvo! Recarregue o editor para ver as mudanças.', 'success');
+        setShowCodeEditor(false);
+      } else {
+        toast('Falha ao salvar código', 'error');
+      }
+    } catch {
+      toast('Falha ao salvar código', 'error');
+    } finally {
+      setCodeSaving(false);
+    }
   };
 
   const handlePurgeCache = async () => {
@@ -82,6 +122,15 @@ export default function EditorPage() {
         <span className="text-sm font-medium text-text flex-1 truncate">
           {page?.title || 'Carregando...'}
         </span>
+
+        <button
+          onClick={handleOpenCode}
+          className="text-text-muted hover:text-text border border-border hover:bg-surface-2 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          title="Editar Código HTML"
+        >
+          <Code size={13} />
+          Código
+        </button>
 
         <button
           onClick={() => setShowTranslate(true)}
@@ -161,6 +210,38 @@ export default function EditorPage() {
         pageId={pageId}
         pageTitle={page?.title || ''}
       />
+
+      {/* Code Editor Modal */}
+      {showCodeEditor && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">
+          <div className="bg-surface rounded-lg shadow-2xl flex flex-col" style={{ width: '90vw', height: '90vh' }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <span className="text-sm font-semibold text-text">Editar Código HTML</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSaveCode}
+                  disabled={codeSaving}
+                  className="bg-primary text-bg hover:bg-primary/90 px-4 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors"
+                >
+                  {codeSaving ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  onClick={() => setShowCodeEditor(false)}
+                  className="text-text-muted hover:text-text px-3 py-1.5 rounded-md text-sm cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={codeContent}
+              onChange={(e) => setCodeContent(e.target.value)}
+              className="flex-1 w-full p-4 font-mono text-xs bg-[#1e1e1e] text-[#d4d4d4] resize-none focus:outline-none"
+              spellCheck={false}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
