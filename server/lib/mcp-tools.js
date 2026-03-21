@@ -174,13 +174,12 @@ export const MCP_TOOLS = [
   },
   {
     name: 'upload_image',
-    description: 'Upload an image (base64 encoded)',
+    description: 'Upload an image from a local file path',
     inputSchema: {
       type: 'object',
-      required: ['base64', 'filename'],
+      required: ['file_path'],
       properties: {
-        base64: { type: 'string', description: 'Base64 encoded image data' },
-        filename: { type: 'string', description: 'Original filename' },
+        file_path: { type: 'string', description: 'Absolute path to the image file on disk' },
       },
     },
   },
@@ -385,12 +384,18 @@ export async function executeTool(toolName, params, db, apiKey) {
       return db.prepare('SELECT id, filename, original_name, path, size, mime_type, width, height, created_at FROM images ORDER BY created_at DESC').all();
 
     case 'upload_image': {
+      const fs = await import('fs');
       const { processAndSaveImage } = await import('./image-processing.js');
-      const buffer = Buffer.from(params.base64, 'base64');
-      const ext = path.extname(params.filename).toLowerCase();
+      const filePath = params.file_path;
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+      const buffer = fs.readFileSync(filePath);
+      const filename = path.basename(filePath);
+      const ext = path.extname(filename).toLowerCase();
       const mimeType = MIME_BY_EXT[ext] || 'image/jpeg';
-      const result = await processAndSaveImage(buffer, params.filename, mimeType);
-      logActivity(db, apiKey, 'upload_image', 'image', result.id, params.filename, null);
+      const result = await processAndSaveImage(buffer, filename, mimeType);
+      logActivity(db, apiKey, 'upload_image', 'image', result.id, filename, null);
       return result;
     }
 
