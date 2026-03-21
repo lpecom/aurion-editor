@@ -32,12 +32,53 @@ export const MCP_TOOLS = [
   },
   {
     name: 'get_page',
-    description: 'Get page details by ID or slug',
+    description: 'Get page overview: metadata + section tree (no HTML). Use include_html=true for full HTML.',
     inputSchema: {
       type: 'object',
       properties: {
         id: { type: 'string', description: 'Page ID' },
         slug: { type: 'string', description: 'Page slug (alternative to id)' },
+        include_html: { type: 'boolean', description: 'Include full html_content in response (default: false)' },
+      },
+    },
+  },
+  {
+    name: 'get_section',
+    description: 'Get HTML of a specific section by data-id or CSS selector',
+    inputSchema: {
+      type: 'object',
+      required: ['page_id', 'selector'],
+      properties: {
+        page_id: { type: 'string', description: 'Page ID' },
+        selector: { type: 'string', description: 'Elementor data-id (e.g. "657fba23") or CSS selector (e.g. ".titulo")' },
+      },
+    },
+  },
+  {
+    name: 'edit_section',
+    description: 'Edit a section: find/replace (old_string+new_string) or full replace (html). Preserves GrapesJS project_data.',
+    inputSchema: {
+      type: 'object',
+      required: ['page_id', 'selector'],
+      properties: {
+        page_id: { type: 'string', description: 'Page ID' },
+        selector: { type: 'string', description: 'Elementor data-id or CSS selector' },
+        old_string: { type: 'string', description: 'Text to find (Mode A: find/replace)' },
+        new_string: { type: 'string', description: 'Replacement text (Mode A: find/replace)' },
+        occurrence: { type: 'integer', description: 'Which occurrence to replace (1-indexed). Default 0 = must be unique.' },
+        html: { type: 'string', description: 'New inner HTML (Mode B: full replace)' },
+      },
+    },
+  },
+  {
+    name: 'inject_css',
+    description: 'Inject CSS overrides into a page (appends <style> block). Use !important to override Elementor styles.',
+    inputSchema: {
+      type: 'object',
+      required: ['page_id', 'css'],
+      properties: {
+        page_id: { type: 'string', description: 'Page ID' },
+        css: { type: 'string', description: 'CSS rules to inject (without style tags)' },
       },
     },
   },
@@ -249,7 +290,86 @@ export async function executeTool(toolName, params, db, apiKey) {
         ? db.prepare('SELECT * FROM pages WHERE id = ?').get(params.id)
         : db.prepare('SELECT * FROM pages WHERE slug = ?').get(params.slug);
       if (!page) throw new Error('Page not found');
-      return page;
+      const { parseSectionTree } = await import('./section-utils.js');
+      const { sections, note } = parseSectionTree(page.html_content || '');
+      const result = {
+        id: page.id,
+        title: page.title,
+        slug: page.slug,
+        type: page.type,
+        status: page.status,
+        lang: page.lang,
+        updated_at: page.updated_at,
+        sections,
+      };
+      if (note) result.note = note;
+      if (params.include_html) result.html_content = page.html_content;
+      return result;
+    }
+
+    case 'get_section': {
+      const { getSectionHtml } = await import('./section-utils.js');
+      const page = db.prepare('SELECT html_content FROM pages WHERE id = ?').get(params.page_id);
+      if (!page) throw new Error('Page not found');
+      return getSectionHtml(page.html_content || '', params.selector);
+    }
+
+    case 'edit_section': {
+      const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(params.page_id);
+      if (!page) throw new Error('Page not found');
+
+      const hasReplace = params.old_string !== undefined && params.new_string !== undefined;
+      const hasFull = params.html !== undefined;
+      if (hasReplace && hasFull) throw new Error('Provide either old_string+new_string or html, not both');
+      if (!hasReplace && !hasFull) throw new Error('Provide old_string+new_string (find/replace) or html (full replace)');
+
+      let result;
+      if (hasReplace) {
+        const { editSectionFindReplace } = await import('./section-utils.js');
+        db.prepare('BEGIN IMMEDIATE').run();
+        try {
+          const freshPage = db.prepare('SELECT html_content FROM pages WHERE id = ?').get(params.page_id);
+          result = editSectionFindReplace(freshPage.html_content, params.selector, params.old_string, params.new_string, params.occurrence || 0);
+          db.prepare("UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?").run(result.full_html, params.page_id);
+          db.prepare('COMMIT').run();
+        } catch (err) {
+          db.prepare('ROLLBACK').run();
+          throw err;
+        }
+      } else {
+        const { editSectionFullReplace } = await import('./section-utils.js');
+        db.prepare('BEGIN IMMEDIATE').run();
+        try {
+          const freshPage = db.prepare('SELECT html_content FROM pages WHERE id = ?').get(params.page_id);
+          result = editSectionFullReplace(freshPage.html_content, params.selector, params.html);
+          db.prepare("UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?").run(result.full_html, params.page_id);
+          db.prepare('COMMIT').run();
+        } catch (err) {
+          db.prepare('ROLLBACK').run();
+          throw err;
+        }
+      }
+
+      logActivity(db, apiKey, 'edit_section', 'page', params.page_id, page.title, { selector: params.selector, mode: hasReplace ? 'find_replace' : 'full_replace' });
+      return { success: true, data_id: params.selector, outer_html: result.section_html };
+    }
+
+    case 'inject_css': {
+      const { injectCss } = await import('./section-utils.js');
+      const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(params.page_id);
+      if (!page) throw new Error('Page not found');
+      db.prepare('BEGIN IMMEDIATE').run();
+      try {
+        const freshPage = db.prepare('SELECT html_content FROM pages WHERE id = ?').get(params.page_id);
+        const updatedHtml = injectCss(freshPage.html_content || '', params.css);
+        db.prepare("UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?").run(updatedHtml, params.page_id);
+        db.prepare('COMMIT').run();
+      } catch (err) {
+        db.prepare('ROLLBACK').run();
+        throw err;
+      }
+      logActivity(db, apiKey, 'inject_css', 'page', params.page_id, page.title, null);
+      return { success: true };
     }
 
     case 'create_page': {
