@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Settings, Pencil, Copy, FileText, Newspaper, Languages, Trash2 } from 'lucide-react';
+import { Plus, Search, Settings, Pencil, Copy, FileText, Newspaper, Languages, Trash2, ExternalLink } from 'lucide-react';
 import { api } from '../lib/api';
 import CreatePageModal from './CreatePageModal';
 import DuplicatePageModal from './DuplicatePageModal';
@@ -259,6 +259,22 @@ export default function PagesList({ type }: PagesListProps) {
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1">
+                      {page.status === 'published' && (() => {
+                        const domain = page.domains?.find(d => d.is_primary)?.domain || page.domains?.[0]?.domain || page.domain;
+                        if (!domain) return null;
+                        return (
+                          <a
+                            href={`https://${domain}/${page.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Ver ${page.title}`}
+                            title={`Ver página publicada`}
+                            className="p-1.5 rounded-md text-text-muted hover:text-primary hover:bg-primary/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        );
+                      })()}
                       <button
                         onClick={() => setSettingsPageId(page.id)}
                         aria-label={`Configurações de ${page.title}`}

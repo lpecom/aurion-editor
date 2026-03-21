@@ -1,12 +1,17 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Globe, Copy, Languages, Trash2, Loader2, Check, Code } from 'lucide-react';
+import { ArrowLeft, Globe, Copy, Languages, Trash2, Loader2, Check, Code, ExternalLink } from 'lucide-react';
 import GrapesEditor from '../editor/GrapesEditor';
 import type { GrapesEditorRef } from '../editor/GrapesEditor';
 import PublishModal from '../components/PublishModal';
 import DuplicatePageModal from '../components/DuplicatePageModal';
 import TranslatePageModal from '../components/TranslatePageModal';
 import { useToast } from '../components/ui/Toast';
+
+interface PageDomain {
+  domain: string;
+  is_primary: number;
+}
 
 interface PageData {
   id: string;
@@ -26,6 +31,7 @@ export default function EditorPage() {
   const [showPublish, setShowPublish] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
   const [showTranslate, setShowTranslate] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [purging, setPurging] = useState(false);
   const [purged, setPurged] = useState(false);
   const [showCodeEditor, setShowCodeEditor] = useState(false);
@@ -37,7 +43,20 @@ export default function EditorPage() {
     (async () => {
       try {
         const res = await fetch(`/api/pages/${pageId}`, { credentials: 'include' });
-        if (res.ok) setPage(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setPage(data);
+          if (data.status === 'published') {
+            try {
+              const dRes = await fetch(`/api/pages/${pageId}/domains`, { credentials: 'include' });
+              if (dRes.ok) {
+                const domains: PageDomain[] = (await dRes.json()).page_domains || [];
+                const domain = domains.find(d => d.is_primary)?.domain || domains[0]?.domain;
+                if (domain) setPublishedUrl(`https://${domain}/${data.slug}`);
+              }
+            } catch { /* ignore */ }
+          }
+        }
       } catch {
         // Page load failed
       }
@@ -122,6 +141,19 @@ export default function EditorPage() {
         <span className="text-sm font-medium text-text flex-1 truncate">
           {page?.title || 'Carregando...'}
         </span>
+
+        {publishedUrl && (
+          <a
+            href={publishedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-muted hover:text-primary border border-border hover:bg-primary/10 hover:border-primary/30 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            title="Ver página publicada"
+          >
+            <ExternalLink size={13} />
+            Ver Página
+          </a>
+        )}
 
         <button
           onClick={handleOpenCode}
