@@ -215,12 +215,13 @@ export const MCP_TOOLS = [
   },
   {
     name: 'upload_image',
-    description: 'Upload an image from a local file path',
+    description: 'Upload an image from a URL (preferred for remote servers) or local file path. Provide exactly one of url or file_path.',
     inputSchema: {
       type: 'object',
-      required: ['file_path'],
       properties: {
-        file_path: { type: 'string', description: 'Absolute path to the image file on disk' },
+        url: { type: 'string', description: 'URL to fetch the image from (preferred)' },
+        file_path: { type: 'string', description: 'Absolute local file path (only works when server has filesystem access)' },
+        filename: { type: 'string', description: 'Override filename (optional, auto-detected from url/path)' },
       },
     },
   },
@@ -504,14 +505,24 @@ export async function executeTool(toolName, params, db, apiKey) {
       return db.prepare('SELECT id, filename, original_name, path, size, mime_type, width, height, created_at FROM images ORDER BY created_at DESC').all();
 
     case 'upload_image': {
-      const fs = await import('fs');
       const { processAndSaveImage } = await import('./image-processing.js');
-      const filePath = params.file_path;
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`File not found: ${filePath}`);
+      let buffer, filename;
+
+      if (params.url) {
+        const res = await fetch(params.url, { signal: AbortSignal.timeout(30000) });
+        if (!res.ok) throw new Error(`Failed to fetch image: HTTP ${res.status}`);
+        buffer = Buffer.from(await res.arrayBuffer());
+        const urlPath = new URL(params.url).pathname;
+        filename = params.filename || path.basename(urlPath) || 'image.jpg';
+      } else if (params.file_path) {
+        const fs = await import('fs');
+        if (!fs.existsSync(params.file_path)) throw new Error(`File not found: ${params.file_path}`);
+        buffer = fs.readFileSync(params.file_path);
+        filename = params.filename || path.basename(params.file_path);
+      } else {
+        throw new Error('Provide either url or file_path');
       }
-      const buffer = fs.readFileSync(filePath);
-      const filename = path.basename(filePath);
+
       const ext = path.extname(filename).toLowerCase();
       const mimeType = MIME_BY_EXT[ext] || 'image/jpeg';
       const result = await processAndSaveImage(buffer, filename, mimeType);
