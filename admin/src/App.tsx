@@ -31,6 +31,8 @@ const Claude = lazy(() => import('./pages/Claude'));
 const Funnels = lazy(() => import('./pages/Funnels'));
 const FunnelEditor = lazy(() => import('./pages/FunnelEditor'));
 const FAQ = lazy(() => import('./pages/FAQ'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const AnalyticsDetail = lazy(() => import('./pages/AnalyticsDetail'));
 
 function PageLoader() {
   return (
@@ -77,6 +79,8 @@ export default function App() {
             }
           >
             <Route index element={<SuspenseWrapper><Dashboard /></SuspenseWrapper>} />
+            <Route path="analytics" element={<SuspenseWrapper><AnalyticsPage /></SuspenseWrapper>} />
+            <Route path="analytics/:pageId" element={<SuspenseWrapper><AnalyticsDetail /></SuspenseWrapper>} />
             <Route path="paginas-de-venda" element={<SuspenseWrapper><SalesPages /></SuspenseWrapper>} />
             <Route path="advertoriais" element={<SuspenseWrapper><Advertorials /></SuspenseWrapper>} />
             <Route path="auxiliares" element={<SuspenseWrapper><Auxiliares /></SuspenseWrapper>} />
