@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, TrendingUp, TrendingDown, Minus, Eye, Users, MousePointerClick, Percent } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Minus, Eye, Users, MousePointerClick, Percent, ArrowUpRight } from 'lucide-react';
 import { useAnalytics } from '../hooks/useFetchAnalytics';
 
 type SortKey = 'pageviews' | 'uniques' | 'cta_clicks' | 'cta_rate' | 'trend';
@@ -36,20 +36,33 @@ export default function AnalyticsPage() {
 
   const s = data?.summary;
 
+  const statCards = s ? [
+    { label: 'Visitas', value: fmt(s.total_pageviews), icon: <Eye className="w-5 h-5" />, color: 'text-primary', gradient: 'from-primary/10 to-transparent' },
+    { label: 'Visitantes', value: fmt(s.total_uniques), icon: <Users className="w-5 h-5" />, color: 'text-accent', gradient: 'from-accent/10 to-transparent' },
+    { label: 'Cliques CTA', value: fmt(s.total_cta_clicks), icon: <MousePointerClick className="w-5 h-5" />, color: 'text-primary', gradient: 'from-primary/10 to-transparent' },
+    { label: 'Taxa CTA', value: fmtPct(s.avg_cta_rate), icon: <Percent className="w-5 h-5" />, color: 'text-warning', gradient: 'from-warning/10 to-transparent' },
+  ] : [];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BarChart3 className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-800">Analytics</h1>
+    <div className="animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold text-text">Analytics</h1>
+          </div>
+          <p className="text-sm text-text-muted mt-1">Acompanhe visitas e conversões das suas páginas.</p>
         </div>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        <div className="flex gap-1 bg-surface-2/80 rounded-xl p-1">
           {periods.map(p => (
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                period === p.value ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg cursor-pointer transition-all duration-200 ${
+                period === p.value
+                  ? 'bg-surface shadow-sm text-text'
+                  : 'text-text-muted hover:text-text'
               }`}
             >
               {p.label}
@@ -58,80 +71,127 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {s && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Visitas', value: fmt(s.total_pageviews), icon: Eye },
-            { label: 'Únicos', value: fmt(s.total_uniques), icon: Users },
-            { label: 'Cliques CTA', value: fmt(s.total_cta_clicks), icon: MousePointerClick },
-            { label: 'Taxa CTA', value: fmtPct(s.avg_cta_rate), icon: Percent },
-          ].map(card => (
-            <div key={card.label} className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
-                <card.icon className="w-4 h-4" />
-                {card.label}
+      {/* Summary Cards */}
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-surface border border-border/50 rounded-2xl p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl animate-shimmer" />
+              <div>
+                <div className="h-7 w-16 rounded animate-shimmer mb-1" />
+                <div className="h-4 w-20 rounded animate-shimmer" />
               </div>
-              <div className="text-2xl font-bold text-gray-800">{card.value}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {statCards.map(card => (
+            <div
+              key={card.label}
+              className="bg-surface border border-border/50 rounded-2xl p-5 flex items-center gap-4 hover:border-border-hover transition-all duration-200 relative overflow-hidden card-hover"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} pointer-events-none`} />
+              <div className={`relative w-11 h-11 rounded-xl bg-surface-2/80 flex items-center justify-center ${card.color}`}>
+                {card.icon}
+              </div>
+              <div className="relative">
+                <p className="text-2xl font-bold text-text">{card.value}</p>
+                <p className="text-sm text-text-muted">{card.label}</p>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-400">Carregando...</div>
-        ) : !sorted.length ? (
-          <div className="p-8 text-center text-gray-400">Nenhum dado para o período</div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">#</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Página</th>
-                {([
-                  ['pageviews', 'Visitas'],
-                  ['uniques', 'Únicos'],
-                  ['cta_clicks', 'Cliques CTA'],
-                  ['cta_rate', 'Taxa CTA'],
-                  ['trend', 'Tendência'],
-                ] as [SortKey, string][]).map(([key, label]) => (
-                  <th
-                    key={key}
-                    onClick={() => toggleSort(key)}
-                    className="text-right text-xs font-medium text-gray-500 uppercase px-4 py-3 cursor-pointer hover:text-gray-700 select-none"
-                  >
-                    {label} {sortKey === key ? (sortDir === 'desc' ? '↓' : '↑') : ''}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((page, i) => (
-                <tr
-                  key={page.page_id}
-                  onClick={() => navigate(`/analytics/${page.page_id}`)}
-                  className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors"
-                >
-                  <td className="px-4 py-3 text-sm text-gray-400">{i + 1}</td>
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-800">{page.title}</div>
-                    <div className="text-xs text-gray-400">{page.slug}</div>
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm font-medium text-gray-800">{fmt(page.pageviews)}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-600">{fmt(page.uniques)}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-600">{fmt(page.cta_clicks)}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-600">{fmtPct(page.cta_rate)}</td>
-                  <td className="px-4 py-3 text-right text-sm font-medium">
-                    <span className={page.trend > 0 ? 'text-green-600' : page.trend < 0 ? 'text-red-500' : 'text-gray-400'}>
-                      {page.trend > 0 ? <TrendingUp className="w-4 h-4 inline mr-1" /> : page.trend < 0 ? <TrendingDown className="w-4 h-4 inline mr-1" /> : <Minus className="w-4 h-4 inline mr-1" />}
-                      {page.trend > 0 ? '+' : ''}{fmtPct(page.trend)}
-                    </span>
-                  </td>
-                </tr>
+      {/* Ranked Table */}
+      <div>
+        <h2 className="text-lg font-semibold text-text mb-1">Performance por Pagina</h2>
+        <p className="text-sm text-text-muted mb-4">Clique em uma linha para ver detalhes.</p>
+
+        <div className="bg-surface border border-border/50 rounded-2xl overflow-hidden">
+          {loading ? (
+            <div className="divide-y divide-border/50">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-4">
+                  <div className="h-4 w-6 rounded animate-shimmer" />
+                  <div className="h-4 w-48 rounded animate-shimmer" />
+                  <div className="ml-auto flex gap-8">
+                    {[...Array(5)].map((_, j) => (
+                      <div key={j} className="h-4 w-14 rounded animate-shimmer" />
+                    ))}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        )}
+            </div>
+          ) : !sorted.length ? (
+            <div className="p-10 text-center">
+              <BarChart3 className="w-10 h-10 text-text-muted/40 mx-auto mb-3" />
+              <p className="text-text-muted font-medium">Nenhum dado para o periodo</p>
+              <p className="text-text-muted/60 text-sm mt-1">Os dados aparecem quando suas paginas publicadas recebem visitas.</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="text-left text-xs font-medium text-text-muted uppercase tracking-wider px-5 py-3 w-10">#</th>
+                  <th className="text-left text-xs font-medium text-text-muted uppercase tracking-wider px-5 py-3">Pagina</th>
+                  {([
+                    ['pageviews', 'Visitas'],
+                    ['uniques', 'Unicos'],
+                    ['cta_clicks', 'Cliques CTA'],
+                    ['cta_rate', 'Taxa CTA'],
+                    ['trend', 'Tendencia'],
+                  ] as [SortKey, string][]).map(([key, label]) => (
+                    <th
+                      key={key}
+                      onClick={() => toggleSort(key)}
+                      className="text-right text-xs font-medium text-text-muted uppercase tracking-wider px-5 py-3 cursor-pointer hover:text-text select-none transition-colors duration-200"
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {label}
+                        {sortKey === key && (
+                          <span className="text-primary">{sortDir === 'desc' ? '\u2193' : '\u2191'}</span>
+                        )}
+                      </span>
+                    </th>
+                  ))}
+                  <th className="w-8" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {sorted.map((page, i) => (
+                  <tr
+                    key={page.page_id}
+                    onClick={() => navigate(`/analytics/${page.page_id}`)}
+                    className="hover:bg-surface-2/50 cursor-pointer transition-colors duration-200 group"
+                  >
+                    <td className="px-5 py-3.5 text-sm text-text-muted font-mono">{i + 1}</td>
+                    <td className="px-5 py-3.5">
+                      <div className="text-sm font-medium text-text">{page.title}</div>
+                      <div className="text-xs text-text-muted font-mono mt-0.5">/{page.slug}</div>
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-sm font-semibold text-text tabular-nums">{fmt(page.pageviews)}</td>
+                    <td className="px-5 py-3.5 text-right text-sm text-text-muted tabular-nums">{fmt(page.uniques)}</td>
+                    <td className="px-5 py-3.5 text-right text-sm text-text-muted tabular-nums">{fmt(page.cta_clicks)}</td>
+                    <td className="px-5 py-3.5 text-right text-sm text-text-muted tabular-nums">{fmtPct(page.cta_rate)}</td>
+                    <td className="px-5 py-3.5 text-right text-sm font-medium">
+                      <span className={`inline-flex items-center gap-1 ${
+                        page.trend > 0 ? 'text-green-500' : page.trend < 0 ? 'text-red-400' : 'text-text-muted'
+                      }`}>
+                        {page.trend > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : page.trend < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                        {page.trend > 0 ? '+' : ''}{fmtPct(page.trend)}
+                      </span>
+                    </td>
+                    <td className="pr-4 py-3.5">
+                      <ArrowUpRight className="w-4 h-4 text-text-muted/0 group-hover:text-text-muted transition-all duration-200" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );
