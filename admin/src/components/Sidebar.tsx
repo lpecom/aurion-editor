@@ -27,6 +27,7 @@ import {
   FileStack,
   GitBranch,
   Server,
+  BarChart3,
 } from 'lucide-react';
 
 interface NavItem {
@@ -39,6 +40,7 @@ interface NavItem {
 
 const navItems: (NavItem | { separator: string })[] = [
   { label: 'Dashboard', to: '/', icon: <LayoutDashboard className="w-5 h-5" /> },
+  { label: 'Analytics', to: '/analytics', icon: <BarChart3 className="w-5 h-5" /> },
 
   { separator: 'Conteúdo' },
   { label: 'Páginas de Venda', to: '/paginas-de-venda', icon: <FileText className="w-5 h-5" /> },

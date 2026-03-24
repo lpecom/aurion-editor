@@ -25,6 +25,8 @@ import mcpRoutes from './routes/mcp.js';
 import pageParentsRoutes from './routes/page-parents.js';
 import funnelsRoutes from './routes/funnels.js';
 import workersRoutes from './routes/workers.js';
+import analyticsRoutes from './routes/analytics.js';
+import { startCleanupJob, checkRateLimit, insertEvent } from './lib/analytics.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const isProd = process.env.NODE_ENV === 'production';
@@ -63,6 +65,7 @@ fastify.addHook('onRequest', async (request, reply) => {
   const url = request.url.split('?')[0];
   if (url === '/api/health') { request.isCustomDomain = false; return; }
   if (url === '/api/mcp' || url.startsWith('/api/mcp')) { request.isCustomDomain = false; return; }
+  if (url === '/t' || url === '/api/analytics/collect') { request.isCustomDomain = false; return; }
   if (MAIN_HOSTS.has(host)) { request.isCustomDomain = false; return; }
   request.isCustomDomain = true;
   request.customDomainHost = host;
@@ -73,6 +76,14 @@ fastify.addHook('onRequest', async (request, reply) => {
 
 // Health check
 fastify.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+
+// Analytics collect alias (short path for tracking script)
+fastify.post('/t', async (request, reply) => {
+  const ip = request.ip || request.headers['x-forwarded-for'] || 'unknown';
+  if (!checkRateLimit(ip)) return reply.code(204).send();
+  insertEvent(request.body || {});
+  return reply.code(204).send();
+});
 
 
 // API routes
@@ -95,6 +106,7 @@ await fastify.register(mcpRoutes, { prefix: '/api' });
 await fastify.register(pageParentsRoutes, { prefix: '/api' });
 await fastify.register(funnelsRoutes, { prefix: '/api' });
 await fastify.register(workersRoutes, { prefix: '/api' });
+await fastify.register(analyticsRoutes, { prefix: '/api' });
 
 // Static file serving
 await fastify.register(staticPlugin);
@@ -116,6 +128,7 @@ try {
   console.log(`Admin: http://localhost:${PORT}/admin`);
   console.log(`Database: ${process.env.DATABASE_PATH || 'data/aurion.db (ephemeral!)'}`);
   console.log(`Uploads: ${process.env.UPLOAD_DIR || 'assets/imgs (ephemeral!)'}`);
+  startCleanupJob();
 
 } catch (err) {
   console.error('Failed to start:', err);
