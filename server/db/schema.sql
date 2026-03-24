@@ -190,3 +190,23 @@ CREATE TABLE IF NOT EXISTS funnel_domains (
   domain_id TEXT NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
   PRIMARY KEY (funnel_id, domain_id)
 );
+
+-- Analytics events (pageviews + CTA clicks)
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  page_id TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK(event_type IN ('pageview', 'cta_click')),
+  visitor_id TEXT NOT NULL,
+  referrer TEXT,
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT,
+  device TEXT CHECK(device IN ('mobile', 'desktop', 'tablet')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (page_id) REFERENCES pages(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_page_date ON analytics_events(page_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_event_date ON analytics_events(event_type, created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_page_visitor ON analytics_events(page_id, visitor_id, created_at);
