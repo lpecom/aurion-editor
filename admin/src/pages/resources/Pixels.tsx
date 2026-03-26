@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Code, Plus, Pencil, Trash2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Code, Plus, Pencil, Trash2, ChevronDown, X, FileText } from 'lucide-react';
 import { api } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -7,12 +7,21 @@ import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import ResourceFolderNav from '../../components/ResourceFolderNav';
 
+interface PageItem {
+  id: string;
+  title: string;
+  slug: string;
+  type: string;
+}
+
 interface Pixel {
-  id: number;
+  id: string;
   name: string;
   type: string;
   pixel_id: string;
-  config: string | null;
+  config: Record<string, unknown> | null;
+  events: string[];
+  page_ids: string[];
   created_at: string;
 }
 
@@ -21,32 +30,184 @@ interface PixelForm {
   type: string;
   pixel_id: string;
   config: string;
+  events: string[];
+  page_ids: string[];
+  custom_event: string;
 }
 
-const PIXEL_TYPES = ['Facebook Pixel', 'Google Analytics', 'Google Ads', 'TikTok Pixel', 'Custom'];
+const PIXEL_TYPES = ['Facebook Pixel', 'Google Analytics', 'Google Ads', 'TikTok Pixel', 'Taboola Ads', 'Custom'];
+
+const PIXEL_TYPE_MAP: Record<string, string> = {
+  'Facebook Pixel': 'facebook',
+  'Google Analytics': 'google',
+  'Google Ads': 'google',
+  'TikTok Pixel': 'tiktok',
+  'Taboola Ads': 'taboola',
+  'Custom': 'custom',
+};
+
+const PIXEL_TYPE_REVERSE: Record<string, string> = {
+  facebook: 'Facebook Pixel',
+  google: 'Google Analytics',
+  tiktok: 'TikTok Pixel',
+  taboola: 'Taboola Ads',
+  custom: 'Custom',
+};
 
 const PIXEL_TYPE_DESCRIPTIONS: Record<string, string> = {
   'Facebook Pixel': 'Rastreamento de conversoes e eventos do Meta Ads.',
   'Google Analytics': 'Analise de trafego e comportamento de usuarios.',
   'Google Ads': 'Rastreamento de conversoes do Google Ads.',
   'TikTok Pixel': 'Rastreamento de eventos do TikTok Ads.',
+  'Taboola Ads': 'Rastreamento de conversoes e eventos do Taboola Ads.',
   'Custom': 'Pixel personalizado com configuracao JSON.',
 };
 
-const emptyForm: PixelForm = { name: '', type: 'Facebook Pixel', pixel_id: '', config: '' };
+const PIXEL_EVENTS: Record<string, string[]> = {
+  'Facebook Pixel': ['PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout', 'AddPaymentInfo', 'Purchase', 'Lead', 'CompleteRegistration', 'Search'],
+  'Google Analytics': ['page_view', 'view_item', 'add_to_cart', 'begin_checkout', 'add_payment_info', 'purchase', 'generate_lead', 'sign_up', 'search'],
+  'Google Ads': ['page_view', 'view_item', 'add_to_cart', 'begin_checkout', 'add_payment_info', 'purchase', 'generate_lead', 'sign_up', 'search'],
+  'TikTok Pixel': ['ViewContent', 'AddToCart', 'InitiateCheckout', 'AddPaymentInfo', 'CompletePayment', 'SubmitForm', 'CompleteRegistration', 'Search'],
+  'Taboola Ads': ['page_view', 'view_content', 'add_to_cart', 'start_checkout', 'add_payment_info', 'make_purchase', 'lead', 'complete_registration', 'search'],
+  'Custom': [],
+};
+
+const emptyForm: PixelForm = { name: '', type: 'Facebook Pixel', pixel_id: '', config: '', events: [], page_ids: [], custom_event: '' };
 
 function typeBadgeVariant(type: string) {
-  switch (type) {
+  const label = PIXEL_TYPE_REVERSE[type] || type;
+  switch (label) {
     case 'Facebook Pixel': return 'info' as const;
     case 'Google Analytics': return 'warning' as const;
     case 'Google Ads': return 'success' as const;
     case 'TikTok Pixel': return 'danger' as const;
+    case 'Taboola Ads': return 'default' as const;
     default: return 'default' as const;
   }
 }
 
+function typeLabel(type: string) {
+  return PIXEL_TYPE_REVERSE[type] || type;
+}
+
+function MultiSelectPages({
+  pages,
+  selectedIds,
+  onChange,
+}: {
+  pages: PageItem[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const toggle = (id: string) => {
+    onChange(
+      selectedIds.includes(id) ? selectedIds.filter((i) => i !== id) : [...selectedIds, id]
+    );
+  };
+
+  const removeTag = (id: string) => {
+    onChange(selectedIds.filter((i) => i !== id));
+  };
+
+  const selectedPages = pages.filter((p) => selectedIds.includes(p.id));
+  const allSelected = selectedIds.length === 0;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 text-sm text-left flex items-center gap-2 cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
+      >
+        <FileText className="w-3.5 h-3.5 text-text-muted shrink-0" />
+        <span className="flex-1 truncate">
+          {allSelected
+            ? 'Todas as paginas'
+            : `${selectedPages.length} pagina${selectedPages.length !== 1 ? 's' : ''} selecionada${selectedPages.length !== 1 ? 's' : ''}`}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-text-muted transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Tags */}
+      {selectedPages.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {selectedPages.map((p) => (
+            <span
+              key={p.id}
+              className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-md"
+            >
+              {p.title}
+              <button
+                type="button"
+                onClick={() => removeTag(p.id)}
+                className="hover:text-primary/70 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto">
+          {/* Option: All pages */}
+          <button
+            type="button"
+            onClick={() => { onChange([]); setOpen(false); }}
+            className={`w-full text-left px-3 py-2.5 text-sm cursor-pointer transition-colors duration-150 ${
+              allSelected ? 'bg-primary/10 text-primary font-medium' : 'text-text hover:bg-surface-2'
+            }`}
+          >
+            Todas as paginas
+          </button>
+
+          <div className="border-t border-border/50" />
+
+          {pages.map((p) => {
+            const checked = selectedIds.includes(p.id);
+            return (
+              <label
+                key={p.id}
+                className={`flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer transition-colors duration-150 ${
+                  checked ? 'bg-primary/5' : 'hover:bg-surface-2'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(p.id)}
+                  className="accent-primary cursor-pointer w-3.5 h-3.5"
+                />
+                <span className="text-text flex-1 truncate">{p.title}</span>
+                <span className="text-[11px] text-text-muted">{p.type}</span>
+              </label>
+            );
+          })}
+
+          {pages.length === 0 && (
+            <p className="px-3 py-2 text-sm text-text-muted">Nenhuma pagina disponivel.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Pixels() {
   const [pixels, setPixels] = useState<Pixel[]>([]);
+  const [pages, setPages] = useState<PageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Pixel | null>(null);
@@ -56,10 +217,14 @@ export default function Pixels() {
   const [deleting, setDeleting] = useState(false);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
-  const fetchPixels = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const data = await api.get<Pixel[]>('/pixels');
-      setPixels(data);
+      const [pixelData, pageData] = await Promise.all([
+        api.get<Pixel[]>('/pixels'),
+        api.get<PageItem[]>('/pages'),
+      ]);
+      setPixels(pixelData);
+      setPages(pageData);
     } catch {
       // silently fail
     } finally {
@@ -68,8 +233,8 @@ export default function Pixels() {
   }, []);
 
   useEffect(() => {
-    fetchPixels();
-  }, [fetchPixels]);
+    fetchData();
+  }, [fetchData]);
 
   const openCreate = () => {
     setEditing(null);
@@ -79,11 +244,15 @@ export default function Pixels() {
 
   const openEdit = (pixel: Pixel) => {
     setEditing(pixel);
+    const label = PIXEL_TYPE_REVERSE[pixel.type] || pixel.type;
     setForm({
       name: pixel.name,
-      type: pixel.type,
+      type: label,
       pixel_id: pixel.pixel_id,
-      config: pixel.config || '',
+      config: pixel.config ? JSON.stringify(pixel.config, null, 2) : '',
+      events: pixel.events || [],
+      page_ids: pixel.page_ids || [],
+      custom_event: '',
     });
     setModalOpen(true);
   };
@@ -91,11 +260,14 @@ export default function Pixels() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = {
+      const backendType = PIXEL_TYPE_MAP[form.type] || form.type;
+      const body: Record<string, unknown> = {
         name: form.name,
-        type: form.type,
+        type: backendType,
         pixel_id: form.pixel_id,
-        config: form.config || null,
+        config: form.config ? JSON.parse(form.config) : null,
+        events: form.events,
+        page_ids: form.page_ids,
       };
       if (editing) {
         await api.put(`/pixels/${editing.id}`, body);
@@ -103,7 +275,7 @@ export default function Pixels() {
         await api.post('/pixels', body);
       }
       setModalOpen(false);
-      fetchPixels();
+      fetchData();
     } catch {
       // silently fail
     } finally {
@@ -125,7 +297,35 @@ export default function Pixels() {
     }
   };
 
+  const toggleEvent = (event: string) => {
+    setForm((prev) => ({
+      ...prev,
+      events: prev.events.includes(event)
+        ? prev.events.filter((e) => e !== event)
+        : [...prev.events, event],
+    }));
+  };
+
+  const addCustomEvent = () => {
+    const evt = form.custom_event.trim();
+    if (!evt || form.events.includes(evt)) return;
+    setForm((prev) => ({
+      ...prev,
+      events: [...prev.events, evt],
+      custom_event: '',
+    }));
+  };
+
+  const removeEvent = (event: string) => {
+    setForm((prev) => ({
+      ...prev,
+      events: prev.events.filter((e) => e !== event),
+    }));
+  };
+
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
+
+  const availableEvents = PIXEL_EVENTS[form.type] || [];
 
   return (
     <div className="flex -m-6 h-[calc(100vh-3.5rem)]">
@@ -188,6 +388,7 @@ export default function Pixels() {
                 <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Nome</th>
                 <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Tipo</th>
                 <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Pixel ID</th>
+                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Paginas</th>
                 <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Criado em</th>
                 <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Acoes</th>
               </tr>
@@ -197,9 +398,14 @@ export default function Pixels() {
                 <tr key={pixel.id} className="border-b border-border last:border-b-0 hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
                   <td className="px-6 py-4 text-text font-medium">{pixel.name}</td>
                   <td className="px-6 py-4">
-                    <Badge variant={typeBadgeVariant(pixel.type)} dot>{pixel.type}</Badge>
+                    <Badge variant={typeBadgeVariant(pixel.type)} dot>{typeLabel(pixel.type)}</Badge>
                   </td>
                   <td className="px-6 py-4 text-text-muted font-mono text-sm">{pixel.pixel_id}</td>
+                  <td className="px-6 py-4 text-text-muted text-sm">
+                    {pixel.page_ids.length === 0
+                      ? <span className="text-text-muted/60">Todas</span>
+                      : `${pixel.page_ids.length} pagina${pixel.page_ids.length !== 1 ? 's' : ''}`}
+                  </td>
                   <td className="px-6 py-4 text-text-muted text-sm">{formatDate(pixel.created_at)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -266,7 +472,7 @@ export default function Pixels() {
             <label className="block text-sm font-medium text-text mb-1">Tipo</label>
             <select
               value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
+              onChange={(e) => setForm({ ...form, type: e.target.value, events: [] })}
               className="w-full bg-surface-2 border border-border text-text rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none cursor-pointer transition-colors duration-200"
             >
               {PIXEL_TYPES.map((t) => (
@@ -285,6 +491,86 @@ export default function Pixels() {
               placeholder="123456789"
             />
           </div>
+
+          {/* Page selector */}
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">Paginas</label>
+            <MultiSelectPages
+              pages={pages}
+              selectedIds={form.page_ids}
+              onChange={(ids) => setForm({ ...form, page_ids: ids })}
+            />
+            <p className="text-xs text-text-muted mt-1.5">
+              Selecione em quais paginas este pixel sera injetado. Vazio = todas.
+            </p>
+          </div>
+
+          {/* Events selector */}
+          {form.type !== 'Custom' && (
+            <div>
+              <label className="block text-sm font-medium text-text mb-1">Eventos</label>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {availableEvents.map((evt) => (
+                  <label
+                    key={evt}
+                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md border cursor-pointer transition-all duration-150 ${
+                      form.events.includes(evt)
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border/50 bg-surface-2/30 hover:bg-surface-2/60'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.events.includes(evt)}
+                      onChange={() => toggleEvent(evt)}
+                      className="accent-primary cursor-pointer w-3.5 h-3.5"
+                    />
+                    <span className="text-sm text-text font-mono">{evt}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Custom events already added that aren't in the predefined list */}
+              {form.events.filter((e) => !availableEvents.includes(e)).length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {form.events
+                    .filter((e) => !availableEvents.includes(e))
+                    .map((evt) => (
+                      <span
+                        key={evt}
+                        className="inline-flex items-center gap-1 bg-accent/10 text-accent text-xs font-mono px-2 py-1 rounded-md"
+                      >
+                        {evt}
+                        <button type="button" onClick={() => removeEvent(evt)} className="hover:text-accent/70 cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                </div>
+              )}
+
+              {/* Add custom event */}
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  value={form.custom_event}
+                  onChange={(e) => setForm({ ...form, custom_event: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomEvent(); } }}
+                  className="flex-1 bg-surface-2 border border-border text-text rounded-md px-3 py-1.5 text-sm font-mono focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
+                  placeholder="Evento customizado..."
+                />
+                <button
+                  type="button"
+                  onClick={addCustomEvent}
+                  disabled={!form.custom_event.trim()}
+                  className="bg-surface-2 border border-border text-text-muted px-3 py-1.5 rounded-md text-sm hover:text-text hover:bg-surface-2/80 cursor-pointer transition-colors duration-200 disabled:opacity-40"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {form.type === 'Custom' && (
             <div>
               <label className="block text-sm font-medium text-text mb-1">Configuracoes (JSON)</label>
@@ -293,7 +579,7 @@ export default function Pixels() {
                 onChange={(e) => setForm({ ...form, config: e.target.value })}
                 rows={4}
                 className="w-full bg-bg border border-border text-text rounded-md px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
-                placeholder='{"events": ["PageView"]}'
+                placeholder='{"code": "<script>...</script>"}'
               />
             </div>
           )}

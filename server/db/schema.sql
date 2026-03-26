@@ -23,8 +23,18 @@ CREATE TABLE IF NOT EXISTS pixels (
   type TEXT NOT NULL,
   pixel_id TEXT NOT NULL,
   config TEXT,
+  events TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 );
+
+-- Relacao N:N entre pixels e paginas
+CREATE TABLE IF NOT EXISTS pixel_pages (
+  pixel_id TEXT NOT NULL REFERENCES pixels(id) ON DELETE CASCADE,
+  page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+  PRIMARY KEY (pixel_id, page_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pixel_pages_page ON pixel_pages(page_id);
 
 -- Recursos: Dominios
 CREATE TABLE IF NOT EXISTS domains (

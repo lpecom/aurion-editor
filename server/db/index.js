@@ -84,6 +84,22 @@ function initSchema(db) {
   if (!cfCols.includes('kv_namespace_id')) {
     db.exec("ALTER TABLE cloudflare_accounts ADD COLUMN kv_namespace_id TEXT");
   }
+
+  // Migrations: add events column to pixels
+  const pixelCols = db.prepare("PRAGMA table_info(pixels)").all().map(c => c.name);
+  if (!pixelCols.includes('events')) {
+    db.exec("ALTER TABLE pixels ADD COLUMN events TEXT");
+  }
+
+  // Migrations: create pixel_pages junction table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pixel_pages (
+      pixel_id TEXT NOT NULL REFERENCES pixels(id) ON DELETE CASCADE,
+      page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+      PRIMARY KEY (pixel_id, page_id)
+    )
+  `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_pixel_pages_page ON pixel_pages(page_id)");
 }
 
 export function closeDb() {
