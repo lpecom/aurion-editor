@@ -37,9 +37,7 @@ export default function AdminLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6" key={location.pathname}>
-          <div className="animate-fade-in">
-            <Outlet />
-          </div>
+          <Outlet />
         </main>
       </div>
     </div>
