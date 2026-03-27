@@ -149,9 +149,11 @@ export default function Scripts() {
 
   return (
     <div className="flex -m-6 h-[calc(100vh-3.5rem)]">
-      <ResourceFolderNav selectedPageId={selectedPageId} onSelectPage={setSelectedPageId} />
-      <div className="flex-1 overflow-y-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="hidden md:block">
+        <ResourceFolderNav selectedPageId={selectedPageId} onSelectPage={setSelectedPageId} />
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2.5">
             <Terminal className="w-6 h-6 text-primary" />
@@ -201,73 +203,128 @@ export default function Scripts() {
       )}
 
       {!loading && scripts.length > 0 && (
-        <div className="bg-surface border border-border rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-surface-2/30">
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Nome</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Posicao</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Status</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Acoes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scripts.map((script) => (
-                <tr key={script.id} className="border-b border-border last:border-b-0 hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
-                  <td className="px-6 py-4 text-text font-medium">{script.name}</td>
-                  <td className="px-6 py-4">
-                    <Badge variant={positionBadgeVariant(script.position)} dot>
-                      {POSITION_LABELS[script.position] || script.position}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleActive(script)}
-                      aria-label={script.active ? 'Desativar script' : 'Ativar script'}
-                      className={`relative inline-flex h-7 w-12 items-center rounded-full cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none ${
-                        script.active ? 'bg-primary' : 'bg-surface-2 border border-border'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                          script.active ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setPreviewScript(script)}
-                        aria-label={`Visualizar codigo de ${script.name}`}
-                        title={`Visualizar codigo de ${script.name}`}
-                        className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openEdit(script)}
-                        aria-label={`Editar ${script.name}`}
-                        title={`Editar ${script.name}`}
-                        className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(script)}
-                        aria-label={`Excluir ${script.name}`}
-                        title={`Excluir ${script.name}`}
-                        className="p-2 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-surface border border-border rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-surface-2/30">
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Nome</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Posicao</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Status</th>
+                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Acoes</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {scripts.map((script) => (
+                  <tr key={script.id} className="border-b border-border last:border-b-0 hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
+                    <td className="px-6 py-4 text-text font-medium">{script.name}</td>
+                    <td className="px-6 py-4">
+                      <Badge variant={positionBadgeVariant(script.position)} dot>
+                        {POSITION_LABELS[script.position] || script.position}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => toggleActive(script)}
+                        aria-label={script.active ? 'Desativar script' : 'Ativar script'}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none ${
+                          script.active ? 'bg-primary' : 'bg-surface-2 border border-border'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                            script.active ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setPreviewScript(script)}
+                          aria-label={`Visualizar codigo de ${script.name}`}
+                          title={`Visualizar codigo de ${script.name}`}
+                          className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openEdit(script)}
+                          aria-label={`Editar ${script.name}`}
+                          title={`Editar ${script.name}`}
+                          className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(script)}
+                          aria-label={`Excluir ${script.name}`}
+                          title={`Excluir ${script.name}`}
+                          className="p-2 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {scripts.map((script) => (
+              <div key={script.id} className="bg-surface border border-border/50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-text font-medium">{script.name}</span>
+                  <Badge variant={positionBadgeVariant(script.position)} dot>
+                    {POSITION_LABELS[script.position] || script.position}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => toggleActive(script)}
+                    aria-label={script.active ? 'Desativar script' : 'Ativar script'}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none ${
+                      script.active ? 'bg-primary' : 'bg-surface-2 border border-border'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                        script.active ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPreviewScript(script)}
+                      aria-label={`Visualizar codigo de ${script.name}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => openEdit(script)}
+                      aria-label={`Editar ${script.name}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(script)}
+                      aria-label={`Excluir ${script.name}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Create/Edit Modal */}

@@ -15,6 +15,7 @@ import { api } from '../lib/api';
 import FunnelCanvas from '../components/funnel/FunnelCanvas';
 import NodePalette from '../components/funnel/NodePalette';
 import NodeProperties from '../components/funnel/NodeProperties';
+import DesktopOnlyPlaceholder from '../components/ui/DesktopOnlyPlaceholder';
 
 interface Domain {
   id: string;
@@ -36,6 +37,7 @@ export default function FunnelEditor() {
   const { funnelId } = useParams<{ funnelId: string }>();
   const navigate = useNavigate();
 
+  const [isMobile, setIsMobile] = useState(false);
   const [funnel, setFunnel] = useState<Funnel | null>(null);
   const [name, setName] = useState('');
   const [nodes, setNodes] = useState<FunnelNode[]>([]);
@@ -50,6 +52,14 @@ export default function FunnelEditor() {
   const [saving, setSaving] = useState(false);
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // Fetch funnel data
   useEffect(() => {
@@ -257,6 +267,7 @@ export default function FunnelEditor() {
   }, [handleSave, selectedNodeId]);
 
   if (!funnelId) return null;
+  if (isMobile) return <DesktopOnlyPlaceholder />;
 
   const status = funnel?.status || 'draft';
   const isActive = status === 'active';

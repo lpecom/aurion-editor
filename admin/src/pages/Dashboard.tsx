@@ -241,7 +241,7 @@ export default function Dashboard() {
                     <Newspaper className="w-4 h-4 text-text-muted shrink-0" />
                   )}
                   <span className="text-sm font-medium text-text truncate">{page.title}</span>
-                  <span className="text-xs text-text-muted font-mono ml-1">/{page.slug}</span>
+                  <span className="hidden sm:inline text-xs text-text-muted font-mono ml-1">/{page.slug}</span>
                   <span
                     className={`ml-auto shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
                       page.status === 'published'
@@ -269,14 +269,14 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => navigate('/paginas-de-venda')}
-            className="flex items-center gap-2 bg-primary text-bg font-medium rounded-xl px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
+            className="w-full sm:w-auto flex items-center gap-2 bg-primary text-bg font-medium rounded-xl px-4 py-2 cursor-pointer hover:bg-primary/90 transition-colors duration-200"
           >
             <Plus className="w-4 h-4" />
             Nova PV
           </button>
           <button
             onClick={() => navigate('/advertoriais')}
-            className="flex items-center gap-2 bg-accent text-white font-medium rounded-xl px-4 py-2 cursor-pointer hover:bg-accent/90 transition-colors duration-200"
+            className="w-full sm:w-auto flex items-center gap-2 bg-accent text-white font-medium rounded-xl px-4 py-2 cursor-pointer hover:bg-accent/90 transition-colors duration-200"
           >
             <Plus className="w-4 h-4" />
             Novo Advertorial

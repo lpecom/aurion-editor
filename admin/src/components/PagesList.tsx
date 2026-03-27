@@ -102,9 +102,15 @@ export default function PagesList({ type }: PagesListProps) {
     });
   }, [pages, search, statusFilter, langFilter]);
 
+  function getPrimaryDomain(page: Page) {
+    return page.domains?.find(d => d.is_primary)?.domain
+      || page.domains?.[0]?.domain
+      || page.domain;
+  }
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-text">{title}</h1>
         <button
           onClick={() => setCreateOpen(true)}
@@ -116,8 +122,8 @@ export default function PagesList({ type }: PagesListProps) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 mb-4">
+        <div className="relative flex-1 md:min-w-[200px] md:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
           <input
             type="text"
@@ -131,7 +137,7 @@ export default function PagesList({ type }: PagesListProps) {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
+          className="w-full md:w-auto bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
         >
           <option value="">Todos os status</option>
           <option value="published">Publicada</option>
@@ -141,7 +147,7 @@ export default function PagesList({ type }: PagesListProps) {
         <select
           value={langFilter}
           onChange={(e) => setLangFilter(e.target.value)}
-          className="bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
+          className="w-full md:w-auto bg-surface-2 border border-border rounded-md px-3 py-2 text-text text-sm cursor-pointer focus:ring-2 focus:ring-primary/50 focus:outline-none transition-colors duration-200"
         >
           <option value="">Todas as línguas</option>
           <option value="pt-BR">Português (BR)</option>
@@ -198,56 +204,41 @@ export default function PagesList({ type }: PagesListProps) {
           description="Tente ajustar os filtros ou o termo de busca."
         />
       ) : (
-        /* Table */
-        <div className="bg-surface border border-border rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-surface-2/30">
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3.5">Título</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Língua</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Path</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Domínio</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Status</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3.5">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filtered.map((page) => (
-                <tr key={page.id} className="hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => navigate(`/editor/${page.id}`)}
-                        className="text-sm font-medium text-text hover:text-primary cursor-pointer transition-colors duration-200 text-left"
-                      >
-                        {page.title}
-                      </button>
-                      {page.variant_label && (
-                        <Badge variant="info">{page.variant_label}</Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted">
+        <>
+          {/* Mobile cards view */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((page) => {
+              const primaryDomain = getPrimaryDomain(page);
+              return (
+                <div key={page.id} className="bg-surface border border-border/50 rounded-xl p-4">
+                  {/* Top row: title + variant badge */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <button
+                      onClick={() => navigate(`/editor/${page.id}`)}
+                      className="text-sm font-bold text-text hover:text-primary cursor-pointer transition-colors duration-200 text-left truncate"
+                    >
+                      {page.title}
+                    </button>
+                    {page.variant_label && (
+                      <Badge variant="info">{page.variant_label}</Badge>
+                    )}
+                  </div>
+
+                  {/* Second row: slug + language */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-text-muted font-mono truncate">/{page.slug}</span>
+                    <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted shrink-0">
                       {LANG_LABELS[page.lang] || page.lang}
                     </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="text-sm text-text-muted font-mono">/{page.slug}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="text-sm text-text-muted">
-                      {(() => {
-                        const primaryDomain = page.domains?.find(d => d.is_primary)?.domain
-                          || page.domains?.[0]?.domain
-                          || page.domain;
-                        return primaryDomain || '\u2014';
-                      })()}
+                  </div>
+
+                  {/* Third row: domain + status */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-text-muted truncate">
+                      {primaryDomain || '\u2014'}
                     </span>
-                  </td>
-                  <td className="px-3 py-3">
                     <span
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full transition-colors duration-200 ${
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full transition-colors duration-200 shrink-0 ${
                         page.status === 'published'
                           ? 'bg-primary/15 text-primary border border-primary/20'
                           : 'bg-warning/15 text-warning border border-warning/20'
@@ -256,72 +247,188 @@ export default function PagesList({ type }: PagesListProps) {
                       <span className={`w-1.5 h-1.5 rounded-full ${page.status === 'published' ? 'bg-primary' : 'bg-warning'}`} />
                       {page.status === 'published' ? 'Publicada' : 'Rascunho'}
                     </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      {page.status === 'published' && (() => {
-                        const domain = page.domains?.find(d => d.is_primary)?.domain || page.domains?.[0]?.domain || page.domain;
-                        if (!domain) return null;
-                        return (
-                          <a
-                            href={`https://${domain}/${page.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`Ver ${page.title}`}
-                            title={`Ver página publicada`}
-                            className="p-1.5 rounded-md text-text-muted hover:text-primary hover:bg-primary/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        );
-                      })()}
-                      <button
-                        onClick={() => setSettingsPageId(page.id)}
-                        aria-label={`Configurações de ${page.title}`}
-                        title={`Configurações de ${page.title}`}
-                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                  </div>
+
+                  {/* Bottom row: action buttons */}
+                  <div className="flex items-center gap-1 pt-2 border-t border-border/30">
+                    {page.status === 'published' && primaryDomain && (
+                      <a
+                        href={`https://${primaryDomain}/${page.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Ver ${page.title}`}
+                        title="Ver página publicada"
+                        className="p-2.5 rounded-md text-text-muted hover:text-primary hover:bg-primary/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
                       >
-                        <Settings className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDuplicatePage({ id: page.id, title: page.title })}
-                        aria-label={`Duplicar ${page.title}`}
-                        title={`Duplicar ${page.title}`}
-                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setTranslatePage({ id: page.id, title: page.title })}
-                        aria-label={`Traduzir ${page.title}`}
-                        title={`Traduzir ${page.title}`}
-                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                      >
-                        <Languages className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => navigate(`/editor/${page.id}`)}
-                        aria-label={`Editar ${page.title}`}
-                        title={`Editar ${page.title}`}
-                        className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget({ id: page.id, title: page.title })}
-                        aria-label={`Excluir ${page.title}`}
-                        title={`Excluir ${page.title}`}
-                        className="p-1.5 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button
+                      onClick={() => setSettingsPageId(page.id)}
+                      aria-label={`Configurações de ${page.title}`}
+                      title={`Configurações de ${page.title}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDuplicatePage({ id: page.id, title: page.title })}
+                      aria-label={`Duplicar ${page.title}`}
+                      title={`Duplicar ${page.title}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setTranslatePage({ id: page.id, title: page.title })}
+                      aria-label={`Traduzir ${page.title}`}
+                      title={`Traduzir ${page.title}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                    >
+                      <Languages className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => navigate(`/editor/${page.id}`)}
+                      aria-label={`Editar ${page.title}`}
+                      title={`Editar ${page.title}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget({ id: page.id, title: page.title })}
+                      aria-label={`Excluir ${page.title}`}
+                      title={`Excluir ${page.title}`}
+                      className="p-2.5 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none ml-auto"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block bg-surface border border-border rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-surface-2/30">
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3.5">Título</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Língua</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Path</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Domínio</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-3 py-3.5">Status</th>
+                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-3.5">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filtered.map((page) => (
+                  <tr key={page.id} className="hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigate(`/editor/${page.id}`)}
+                          className="text-sm font-medium text-text hover:text-primary cursor-pointer transition-colors duration-200 text-left"
+                        >
+                          {page.title}
+                        </button>
+                        {page.variant_label && (
+                          <Badge variant="info">{page.variant_label}</Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted">
+                        {LANG_LABELS[page.lang] || page.lang}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="text-sm text-text-muted font-mono">/{page.slug}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="text-sm text-text-muted">
+                        {getPrimaryDomain(page) || '\u2014'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full transition-colors duration-200 ${
+                          page.status === 'published'
+                            ? 'bg-primary/15 text-primary border border-primary/20'
+                            : 'bg-warning/15 text-warning border border-warning/20'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${page.status === 'published' ? 'bg-primary' : 'bg-warning'}`} />
+                        {page.status === 'published' ? 'Publicada' : 'Rascunho'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        {page.status === 'published' && (() => {
+                          const domain = getPrimaryDomain(page);
+                          if (!domain) return null;
+                          return (
+                            <a
+                              href={`https://${domain}/${page.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Ver ${page.title}`}
+                              title={`Ver página publicada`}
+                              className="p-1.5 rounded-md text-text-muted hover:text-primary hover:bg-primary/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          );
+                        })()}
+                        <button
+                          onClick={() => setSettingsPageId(page.id)}
+                          aria-label={`Configurações de ${page.title}`}
+                          title={`Configurações de ${page.title}`}
+                          className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDuplicatePage({ id: page.id, title: page.title })}
+                          aria-label={`Duplicar ${page.title}`}
+                          title={`Duplicar ${page.title}`}
+                          className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setTranslatePage({ id: page.id, title: page.title })}
+                          aria-label={`Traduzir ${page.title}`}
+                          title={`Traduzir ${page.title}`}
+                          className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                        >
+                          <Languages className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => navigate(`/editor/${page.id}`)}
+                          aria-label={`Editar ${page.title}`}
+                          title={`Editar ${page.title}`}
+                          className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget({ id: page.id, title: page.title })}
+                          aria-label={`Excluir ${page.title}`}
+                          title={`Excluir ${page.title}`}
+                          className="p-1.5 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <CreatePageModal open={createOpen} onClose={() => setCreateOpen(false)} type={type} />

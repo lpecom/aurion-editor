@@ -7,6 +7,7 @@ import PublishModal from '../components/PublishModal';
 import DuplicatePageModal from '../components/DuplicatePageModal';
 import TranslatePageModal from '../components/TranslatePageModal';
 import { useToast } from '../components/ui/Toast';
+import DesktopOnlyPlaceholder from '../components/ui/DesktopOnlyPlaceholder';
 
 interface PageDomain {
   domain: string;
@@ -27,6 +28,7 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const editorRef = useRef<GrapesEditorRef>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const [page, setPage] = useState<PageData | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
@@ -37,6 +39,14 @@ export default function EditorPage() {
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [codeContent, setCodeContent] = useState('');
   const [codeSaving, setCodeSaving] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     if (!pageId) return;
@@ -124,6 +134,7 @@ export default function EditorPage() {
   };
 
   if (!pageId) return null;
+  if (isMobile) return <DesktopOnlyPlaceholder />;
 
   return (
     <div className="flex flex-col h-screen bg-bg">

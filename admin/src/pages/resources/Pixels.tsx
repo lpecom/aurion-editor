@@ -329,9 +329,11 @@ export default function Pixels() {
 
   return (
     <div className="flex -m-6 h-[calc(100vh-3.5rem)]">
-      <ResourceFolderNav selectedPageId={selectedPageId} onSelectPage={setSelectedPageId} />
-      <div className="flex-1 overflow-y-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="hidden md:block">
+        <ResourceFolderNav selectedPageId={selectedPageId} onSelectPage={setSelectedPageId} />
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2.5">
             <Code className="w-6 h-6 text-primary" />
@@ -381,57 +383,99 @@ export default function Pixels() {
       )}
 
       {!loading && pixels.length > 0 && (
-        <div className="bg-surface border border-border rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-surface-2/30">
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Nome</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Tipo</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Pixel ID</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Paginas</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Criado em</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Acoes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pixels.map((pixel) => (
-                <tr key={pixel.id} className="border-b border-border last:border-b-0 hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
-                  <td className="px-6 py-4 text-text font-medium">{pixel.name}</td>
-                  <td className="px-6 py-4">
-                    <Badge variant={typeBadgeVariant(pixel.type)} dot>{typeLabel(pixel.type)}</Badge>
-                  </td>
-                  <td className="px-6 py-4 text-text-muted font-mono text-sm">{pixel.pixel_id}</td>
-                  <td className="px-6 py-4 text-text-muted text-sm">
-                    {pixel.page_ids.length === 0
-                      ? <span className="text-text-muted/60">Todas</span>
-                      : `${pixel.page_ids.length} pagina${pixel.page_ids.length !== 1 ? 's' : ''}`}
-                  </td>
-                  <td className="px-6 py-4 text-text-muted text-sm">{formatDate(pixel.created_at)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openEdit(pixel)}
-                        aria-label={`Editar ${pixel.name}`}
-                        title={`Editar ${pixel.name}`}
-                        className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(pixel)}
-                        aria-label={`Excluir ${pixel.name}`}
-                        title={`Excluir ${pixel.name}`}
-                        className="p-2 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-surface border border-border rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-surface-2/30">
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Nome</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Tipo</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Pixel ID</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Paginas</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Criado em</th>
+                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-6 py-3.5">Acoes</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pixels.map((pixel) => (
+                  <tr key={pixel.id} className="border-b border-border last:border-b-0 hover:bg-surface-2/50 transition-colors duration-200 border-l-2 border-l-transparent hover:border-l-primary">
+                    <td className="px-6 py-4 text-text font-medium">{pixel.name}</td>
+                    <td className="px-6 py-4">
+                      <Badge variant={typeBadgeVariant(pixel.type)} dot>{typeLabel(pixel.type)}</Badge>
+                    </td>
+                    <td className="px-6 py-4 text-text-muted font-mono text-sm">{pixel.pixel_id}</td>
+                    <td className="px-6 py-4 text-text-muted text-sm">
+                      {pixel.page_ids.length === 0
+                        ? <span className="text-text-muted/60">Todas</span>
+                        : `${pixel.page_ids.length} pagina${pixel.page_ids.length !== 1 ? 's' : ''}`}
+                    </td>
+                    <td className="px-6 py-4 text-text-muted text-sm">{formatDate(pixel.created_at)}</td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEdit(pixel)}
+                          aria-label={`Editar ${pixel.name}`}
+                          title={`Editar ${pixel.name}`}
+                          className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(pixel)}
+                          aria-label={`Excluir ${pixel.name}`}
+                          title={`Excluir ${pixel.name}`}
+                          className="p-2 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {pixels.map((pixel) => (
+              <div key={pixel.id} className="bg-surface border border-border/50 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-text font-medium truncate">{pixel.name}</span>
+                  <Badge variant={typeBadgeVariant(pixel.type)} dot>{typeLabel(pixel.type)}</Badge>
+                </div>
+                <p className="text-text-muted font-mono text-sm">{pixel.pixel_id}</p>
+                <div className="flex items-center justify-between text-sm text-text-muted">
+                  <span>
+                    {pixel.page_ids.length === 0
+                      ? 'Todas as paginas'
+                      : `${pixel.page_ids.length} pagina${pixel.page_ids.length !== 1 ? 's' : ''}`}
+                  </span>
+                  <span>{formatDate(pixel.created_at)}</span>
+                </div>
+                <div className="flex items-center justify-end gap-1 pt-1">
+                  <button
+                    onClick={() => openEdit(pixel)}
+                    aria-label={`Editar ${pixel.name}`}
+                    title={`Editar ${pixel.name}`}
+                    className="p-2.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(pixel)}
+                    aria-label={`Excluir ${pixel.name}`}
+                    title={`Excluir ${pixel.name}`}
+                    className="p-2.5 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-colors duration-200 focus:ring-2 focus:ring-danger/50 focus:outline-none"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Create/Edit Modal */}

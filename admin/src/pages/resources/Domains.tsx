@@ -75,6 +75,7 @@ export default function Domains() {
   const [deprovisioning, setDeprovisioning] = useState(false);
   const [dnsInfo, setDnsInfo] = useState<{ domain: string; workerName: string } | null>(null);
   const [actionError, setActionError] = useState<{ id: number; message: string } | null>(null);
+  const [saveError, setSaveError] = useState('');
 
   const fetchDomains = useCallback(async () => {
     try {
@@ -104,6 +105,7 @@ export default function Domains() {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    setSaveError('');
     setModalOpen(true);
   };
 
@@ -115,11 +117,13 @@ export default function Domains() {
       cloudflare_zone_id: domain.cloudflare_zone_id || '',
       cloudflare_account_id: domain.cloudflare_account_id || '',
     });
+    setSaveError('');
     setModalOpen(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError('');
     try {
       if (editing) {
         await api.put(`/domains/${editing.id}`, {
@@ -137,8 +141,8 @@ export default function Domains() {
       }
       setModalOpen(false);
       fetchDomains();
-    } catch {
-      // silently fail
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Erro ao salvar dominio');
     } finally {
       setSaving(false);
     }
@@ -418,6 +422,12 @@ export default function Domains() {
         }
       >
         <div className="space-y-4">
+          {saveError && (
+            <div className="flex items-center gap-2 text-sm text-danger bg-danger/10 border border-danger/20 rounded-md px-3 py-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {saveError}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-text mb-1">Dominio</label>
             <input
