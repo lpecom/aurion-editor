@@ -156,7 +156,7 @@ export default function PublishModal({
       }
 
       // Publish
-      const result = await api.post<any>(`/pages/${pageId}/publish`);
+      const result = await api.post<any>(`/pages/${pageId}/publish`, undefined, { timeout: 120000 });
 
       // Build URL
       const domain = domains.find((d) => d.id === selectedDomainId);
