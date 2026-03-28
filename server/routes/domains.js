@@ -152,7 +152,7 @@ export default async function domainsRoutes(fastify) {
       await setWorkerCustomDomain(cfAccount, workerName, domain.domain, domain.cloudflare_zone_id);
 
       // Step 4: Update domain record
-      db.prepare("UPDATE domains SET worker_status = 'active', worker_error = NULL WHERE id = ?").run(id);
+      db.prepare("UPDATE domains SET worker_status = 'active', ssl_status = 'active', worker_error = NULL WHERE id = ?").run(id);
 
       return db.prepare('SELECT * FROM domains WHERE id = ?').get(id);
     } catch (err) {

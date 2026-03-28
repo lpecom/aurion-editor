@@ -209,20 +209,34 @@ export const MCP_TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'edit_domain',
+    description: 'Edit a domain (ssl_status, cloudflare_zone_id, cloudflare_account_id)',
+    inputSchema: {
+      type: 'object',
+      required: ['id'],
+      properties: {
+        id: { type: 'string', description: 'Domain ID' },
+        ssl_status: { type: 'string', enum: ['pending', 'active', 'error'] },
+        cloudflare_zone_id: { type: 'string' },
+        cloudflare_account_id: { type: 'string' },
+      },
+    },
+  },
+  {
     name: 'list_images',
     description: 'List all images',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'upload_image',
-    description: 'Upload an image from a URL (preferred for remote servers) or local file path. Provide exactly one of url or file_path.',
+    description: 'Upload an image from a URL. For local files, use curl: curl -X POST https://HOST/api/images/upload -H "Authorization: Bearer TOKEN" -F "file=@/path/to/image.jpg"',
     inputSchema: {
       type: 'object',
       properties: {
-        url: { type: 'string', description: 'URL to fetch the image from (preferred)' },
-        file_path: { type: 'string', description: 'Absolute local file path (only works when server has filesystem access)' },
-        filename: { type: 'string', description: 'Override filename (optional, auto-detected from url/path)' },
+        url: { type: 'string', description: 'URL to fetch the image from' },
+        filename: { type: 'string', description: 'Override filename (optional, auto-detected from url)' },
       },
+      required: ['url'],
     },
   },
   {
@@ -501,27 +515,34 @@ export async function executeTool(toolName, params, db, apiKey) {
     case 'list_domains':
       return db.prepare('SELECT * FROM domains ORDER BY created_at DESC').all();
 
+    case 'edit_domain': {
+      const { id, ssl_status, cloudflare_zone_id, cloudflare_account_id } = args;
+      const domain = db.prepare('SELECT * FROM domains WHERE id = ?').get(id);
+      if (!domain) throw new Error('Domain not found');
+      db.prepare(`
+        UPDATE domains SET
+          ssl_status = COALESCE(?, ssl_status),
+          cloudflare_zone_id = COALESCE(?, cloudflare_zone_id),
+          cloudflare_account_id = COALESCE(?, cloudflare_account_id)
+        WHERE id = ?
+      `).run(ssl_status || null, cloudflare_zone_id || null, cloudflare_account_id || null, id);
+      logActivity(db, apiKey, 'update', 'domain', id, domain.domain, { ssl_status, cloudflare_zone_id, cloudflare_account_id });
+      return db.prepare('SELECT * FROM domains WHERE id = ?').get(id);
+    }
+
     case 'list_images':
       return db.prepare('SELECT id, filename, original_name, path, size, mime_type, width, height, created_at FROM images ORDER BY created_at DESC').all();
 
     case 'upload_image': {
       const { processAndSaveImage } = await import('./image-processing.js');
-      let buffer, filename;
 
-      if (params.url) {
-        const res = await fetch(params.url, { signal: AbortSignal.timeout(30000) });
-        if (!res.ok) throw new Error(`Failed to fetch image: HTTP ${res.status}`);
-        buffer = Buffer.from(await res.arrayBuffer());
-        const urlPath = new URL(params.url).pathname;
-        filename = params.filename || path.basename(urlPath) || 'image.jpg';
-      } else if (params.file_path) {
-        const fs = await import('fs');
-        if (!fs.existsSync(params.file_path)) throw new Error(`File not found: ${params.file_path}`);
-        buffer = fs.readFileSync(params.file_path);
-        filename = params.filename || path.basename(params.file_path);
-      } else {
-        throw new Error('Provide either url or file_path');
-      }
+      if (!params.url) throw new Error('url is required. For local files, use POST /api/images/upload with multipart form data.');
+
+      const res = await fetch(params.url, { signal: AbortSignal.timeout(30000) });
+      if (!res.ok) throw new Error(`Failed to fetch image: HTTP ${res.status}`);
+      const buffer = Buffer.from(await res.arrayBuffer());
+      const urlPath = new URL(params.url).pathname;
+      const filename = params.filename || path.basename(urlPath) || 'image.jpg';
 
       const ext = path.extname(filename).toLowerCase();
       const mimeType = MIME_BY_EXT[ext] || 'image/jpeg';
