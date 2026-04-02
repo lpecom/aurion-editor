@@ -90,10 +90,13 @@ export default async function copierRoutes(fastify) {
     }
 
     const id = randomUUID();
+    const projectData = JSON.stringify({
+      pages: [{ name: title, component: html }],
+    });
     db.prepare(`
-      INSERT INTO pages (id, title, slug, type, lang, status, html_content)
-      VALUES (?, ?, ?, ?, 'pt-BR', 'draft', ?)
-    `).run(id, title, slug, type, html);
+      INSERT INTO pages (id, title, slug, type, lang, status, html_content, project_data)
+      VALUES (?, ?, ?, ?, 'pt-BR', 'draft', ?, ?)
+    `).run(id, title, slug, type, html, projectData);
 
     const page = db.prepare('SELECT id, title, slug, type, status, created_at FROM pages WHERE id = ?').get(id);
     reply.code(201).send({ page });

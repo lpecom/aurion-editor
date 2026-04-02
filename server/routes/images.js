@@ -4,14 +4,24 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb } from '../db/index.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { mcpAuthMiddleware } from '../middleware/mcp-auth.js';
 import { processAndSaveImage } from '../lib/image-processing.js';
 import { getDefaultCloudflareAccount, deleteFromR2, R2_IMAGES_BUCKET } from '../lib/cloudflare.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..'); // KEEP — used by DELETE route
 
+/** Accept either session cookie OR Bearer token */
+async function flexAuthMiddleware(request, reply) {
+  const authHeader = request.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return mcpAuthMiddleware(request, reply);
+  }
+  return authMiddleware(request, reply);
+}
+
 export default async function imagesRoutes(fastify) {
-  fastify.addHook('preHandler', authMiddleware);
+  fastify.addHook('preHandler', flexAuthMiddleware);
 
   // GET /api/images
   fastify.get('/images', async () => {

@@ -156,7 +156,26 @@ export function cleanHtml(html) {
     removeAndTrack(el, 'service_worker', 'Web App Manifest');
   });
 
-  // 7. Replace checkout links with # and mark them with a copier-id for targeted replacement
+  // 7. Convert document.write() scripts to safe DOM manipulation
+  // document.write() destroys the page when called after parsing (e.g., in GrapesJS editor canvas)
+  $('script').each((_, el) => {
+    const content = $(el).html() || '';
+    if (content.includes('document.write')) {
+      // Find the parent element that contains this script — the write target
+      const parent = $(el).parent();
+      const parentId = parent.attr('id');
+      if (parentId) {
+        // Replace document.write(expr) with getElementById(parentId).textContent = expr
+        const rewritten = content.replace(
+          /document\.write\s*\(\s*([\s\S]*?)\s*\)\s*;/g,
+          `(function(){var _t=$1;var _el=document.getElementById("${parentId}");if(_el)_el.textContent=_t;})();`
+        );
+        $(el).html(rewritten);
+      }
+    }
+  });
+
+  // 8. Replace checkout links with # and mark them with a copier-id for targeted replacement
   $('a').each((_, el) => {
     const href = $(el).attr('href') || '';
     if (href && CHECKOUT_DOMAINS.some(d => href.toLowerCase().includes(d.toLowerCase()))) {

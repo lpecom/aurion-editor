@@ -345,7 +345,7 @@ export async function executeTool(toolName, params, db, apiKey) {
         try {
           const freshPage = db.prepare('SELECT html_content FROM pages WHERE id = ?').get(params.page_id);
           result = editSectionFindReplace(freshPage.html_content, params.selector, params.old_string, params.new_string, params.occurrence || 0);
-          db.prepare("UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?").run(result.full_html, params.page_id);
+          db.prepare("UPDATE pages SET html_content = ?, project_data = NULL, updated_at = datetime('now') WHERE id = ?").run(result.full_html, params.page_id);
           db.prepare('COMMIT').run();
         } catch (err) {
           db.prepare('ROLLBACK').run();
@@ -357,7 +357,7 @@ export async function executeTool(toolName, params, db, apiKey) {
         try {
           const freshPage = db.prepare('SELECT html_content FROM pages WHERE id = ?').get(params.page_id);
           result = editSectionFullReplace(freshPage.html_content, params.selector, params.html);
-          db.prepare("UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?").run(result.full_html, params.page_id);
+          db.prepare("UPDATE pages SET html_content = ?, project_data = NULL, updated_at = datetime('now') WHERE id = ?").run(result.full_html, params.page_id);
           db.prepare('COMMIT').run();
         } catch (err) {
           db.prepare('ROLLBACK').run();
@@ -377,7 +377,7 @@ export async function executeTool(toolName, params, db, apiKey) {
       try {
         const freshPage = db.prepare('SELECT html_content FROM pages WHERE id = ?').get(params.page_id);
         const updatedHtml = injectCss(freshPage.html_content || '', params.css);
-        db.prepare("UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?").run(updatedHtml, params.page_id);
+        db.prepare("UPDATE pages SET html_content = ?, project_data = NULL, updated_at = datetime('now') WHERE id = ?").run(updatedHtml, params.page_id);
         db.prepare('COMMIT').run();
       } catch (err) {
         db.prepare('ROLLBACK').run();
@@ -414,6 +414,12 @@ export async function executeTool(toolName, params, db, apiKey) {
       // When html_content is edited but project_data is not explicitly provided,
       // clear project_data so GrapesJS re-imports from html_content on next editor open
       if (params.html_content && !params.project_data) {
+        updates.push('project_data = NULL');
+      }
+      // Allow explicitly clearing project_data to force re-import from HTML
+      if (params.project_data === 'null' || params.project_data === '') {
+        const pdIdx = updates.findIndex(u => u.startsWith('project_data = ?'));
+        if (pdIdx !== -1) { updates.splice(pdIdx, 1); values.splice(pdIdx, 1); }
         updates.push('project_data = NULL');
       }
       if (updates.length === 0) throw new Error('No fields to update');
@@ -472,8 +478,11 @@ export async function executeTool(toolName, params, db, apiKey) {
       if (existing) throw new Error('Slug already exists');
       const result = await scrapeUrl(url);
       const id = randomUUID();
-      db.prepare('INSERT INTO pages (id, title, slug, type, lang, status, html_content) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-        id, title, slug, type, 'pt-BR', 'draft', result.html
+      const projectData = JSON.stringify({
+        pages: [{ name: title, component: result.html }],
+      });
+      db.prepare('INSERT INTO pages (id, title, slug, type, lang, status, html_content, project_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        id, title, slug, type, 'pt-BR', 'draft', result.html, projectData
       );
       logActivity(db, apiKey, 'clone_page', 'page', id, title, { url, slug });
       return db.prepare('SELECT id, title, slug, type, status, created_at FROM pages WHERE id = ?').get(id);

@@ -353,7 +353,7 @@ export default async function pagesRoutes(fastify) {
       `).run(html_content, project_data, id);
     } else if (hasHtml) {
       db.prepare(`
-        UPDATE pages SET html_content = ?, updated_at = datetime('now') WHERE id = ?
+        UPDATE pages SET html_content = ?, project_data = NULL, updated_at = datetime('now') WHERE id = ?
       `).run(html_content, id);
     } else if (hasProject) {
       db.prepare(`
