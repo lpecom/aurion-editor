@@ -22,6 +22,19 @@ const ASSET_EXTS = new Set(['png','jpg','jpeg','webp','gif','svg','ico','css','j
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // Analytics proxy — forward /t to the API origin
+    if (url.pathname === '/t' && request.method === 'POST') {
+      if (env.API_ORIGIN) {
+        ctx.waitUntil(fetch(env.API_ORIGIN + '/t', {
+          method: 'POST',
+          body: request.body,
+          headers: { 'Content-Type': 'application/json' },
+        }).catch(() => {}));
+      }
+      return new Response(null, { status: 204 });
+    }
+
     let slug = url.pathname.replace(/^\\/+/, '').replace(/\\/+$/, '') || 'index';
 
     // Fast path: assets don't need funnel/cloaker checks
@@ -188,23 +201,27 @@ function parseCookies(cookieStr) {
 function checkCloakerRules(request, rules) {
   const headers = request.headers;
 
-  // Country check
+  // Country check — skip if CF-IPCountry header is missing
   if (rules.countries && rules.countries.length > 0) {
     const country = headers.get('CF-IPCountry') || '';
-    const inList = rules.countries.includes(country);
-    if (rules.countries_mode === 'allow' && !inList) return true;
-    if (rules.countries_mode === 'block' && inList) return true;
+    if (country) {
+      const inList = rules.countries.includes(country);
+      if (rules.countries_mode === 'allow' && !inList) return true;
+      if (rules.countries_mode === 'block' && inList) return true;
+    }
   }
 
-  // Referrer check
+  // Referrer check — allow direct traffic (no referrer) through
   if (rules.url_whitelist && rules.url_whitelist.length > 0) {
     let refHost = '';
     try {
       const referer = headers.get('Referer') || '';
       if (referer) refHost = new URL(referer).hostname;
     } catch (e) {}
-    const allowed = rules.url_whitelist.some(d => refHost.includes(d));
-    if (!allowed) return true;
+    if (refHost) {
+      const allowed = rules.url_whitelist.some(d => refHost.includes(d));
+      if (!allowed) return true;
+    }
   }
 
   // Device check
@@ -392,6 +409,20 @@ export async function deployWorker(account, workerName, scriptContent, r2BucketB
       type: 'kv_namespace',
       name: 'FUNNEL_KV',
       namespace_id: account.kv_namespace_id,
+    });
+  }
+
+  // Add API_ORIGIN for analytics proxy
+  const apiOrigin = process.env.ADMIN_HOST
+    ? `https://${process.env.ADMIN_HOST}`
+    : process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : '';
+  if (apiOrigin) {
+    bindings.push({
+      type: 'plain_text',
+      name: 'API_ORIGIN',
+      text: apiOrigin,
     });
   }
 

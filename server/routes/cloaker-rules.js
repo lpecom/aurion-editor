@@ -63,32 +63,35 @@ export default async function cloakerRulesRoutes(fastify) {
       browsers = [],
     } = request.body;
 
-    const existing = db.prepare('SELECT id FROM page_cloaker_rules WHERE page_id = ?').get(pageId);
+    const upsert = db.transaction(() => {
+      const existing = db.prepare('SELECT id FROM page_cloaker_rules WHERE page_id = ?').get(pageId);
 
-    if (existing) {
-      db.prepare(`
-        UPDATE page_cloaker_rules SET
-          enabled = ?, action = ?, redirect_url = ?, safe_page_id = ?,
-          url_whitelist = ?, countries_mode = ?, countries = ?,
-          devices_mode = ?, devices = ?, browsers_mode = ?, browsers = ?,
-          updated_at = datetime('now')
-        WHERE page_id = ?
-      `).run(
-        enabled, action, redirect_url, safe_page_id,
-        JSON.stringify(url_whitelist), countries_mode, JSON.stringify(countries),
-        devices_mode, JSON.stringify(devices), browsers_mode, JSON.stringify(browsers),
-        pageId
-      );
-    } else {
-      db.prepare(`
-        INSERT INTO page_cloaker_rules (id, page_id, enabled, action, redirect_url, safe_page_id, url_whitelist, countries_mode, countries, devices_mode, devices, browsers_mode, browsers)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        randomUUID(), pageId, enabled, action, redirect_url, safe_page_id,
-        JSON.stringify(url_whitelist), countries_mode, JSON.stringify(countries),
-        devices_mode, JSON.stringify(devices), browsers_mode, JSON.stringify(browsers)
-      );
-    }
+      if (existing) {
+        db.prepare(`
+          UPDATE page_cloaker_rules SET
+            enabled = ?, action = ?, redirect_url = ?, safe_page_id = ?,
+            url_whitelist = ?, countries_mode = ?, countries = ?,
+            devices_mode = ?, devices = ?, browsers_mode = ?, browsers = ?,
+            updated_at = datetime('now')
+          WHERE page_id = ?
+        `).run(
+          enabled, action, redirect_url, safe_page_id,
+          JSON.stringify(url_whitelist), countries_mode, JSON.stringify(countries),
+          devices_mode, JSON.stringify(devices), browsers_mode, JSON.stringify(browsers),
+          pageId
+        );
+      } else {
+        db.prepare(`
+          INSERT INTO page_cloaker_rules (id, page_id, enabled, action, redirect_url, safe_page_id, url_whitelist, countries_mode, countries, devices_mode, devices, browsers_mode, browsers)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          randomUUID(), pageId, enabled, action, redirect_url, safe_page_id,
+          JSON.stringify(url_whitelist), countries_mode, JSON.stringify(countries),
+          devices_mode, JSON.stringify(devices), browsers_mode, JSON.stringify(browsers)
+        );
+      }
+    });
+    upsert();
 
     // Auto-republish if page is published on CF domain
     if (page.status === 'published') {
