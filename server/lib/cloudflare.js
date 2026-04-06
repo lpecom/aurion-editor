@@ -26,9 +26,10 @@ export default {
     // Analytics proxy — forward /t to the API origin
     if (url.pathname === '/t' && request.method === 'POST') {
       if (env.API_ORIGIN) {
+        const body = await request.text();
         ctx.waitUntil(fetch(env.API_ORIGIN + '/t', {
           method: 'POST',
-          body: request.body,
+          body,
           headers: { 'Content-Type': 'application/json' },
         }).catch(() => {}));
       }
