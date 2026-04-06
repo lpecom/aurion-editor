@@ -30,14 +30,18 @@ export default {
       }
       const body = await request.text();
       try {
-        const res = await fetch(env.API_ORIGIN + '/t', {
+        const target = env.API_ORIGIN + '/t';
+        const res = await fetch(target, {
           method: 'POST',
           body,
           headers: { 'Content-Type': 'application/json' },
         });
-        return new Response(null, { status: res.status });
+        return new Response(JSON.stringify({ target, status: res.status, body_len: body.length }), {
+          status: res.status,
+          headers: { 'Content-Type': 'application/json' },
+        });
       } catch (e) {
-        return new Response(e.message, { status: 502 });
+        return new Response(JSON.stringify({ error: e.message }), { status: 502 });
       }
     }
 
