@@ -25,24 +25,15 @@ export default {
 
     // Analytics proxy — forward /t to the API origin
     if (url.pathname === '/t' && request.method === 'POST') {
-      if (!env.API_ORIGIN) {
-        return new Response('no API_ORIGIN', { status: 503 });
-      }
       const body = await request.text();
-      try {
-        const target = env.API_ORIGIN + '/t';
-        const res = await fetch(target, {
+      if (env.API_ORIGIN) {
+        ctx.waitUntil(fetch(env.API_ORIGIN + '/t', {
           method: 'POST',
           body,
           headers: { 'Content-Type': 'application/json' },
-        });
-        return new Response(JSON.stringify({ target, status: res.status, body_len: body.length }), {
-          status: res.status,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      } catch (e) {
-        return new Response(JSON.stringify({ error: e.message }), { status: 502 });
+        }).catch(() => {}));
       }
+      return new Response(null, { status: 204 });
     }
 
     let slug = url.pathname.replace(/^\\/+/, '').replace(/\\/+$/, '') || 'index';
