@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, TrendingUp, TrendingDown, Minus, Eye, Users, MousePointerClick, Percent, ArrowUpRight } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Minus, Eye, Users, MousePointerClick, Percent, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { useAnalytics } from '../hooks/useFetchAnalytics';
 
 type SortKey = 'pageviews' | 'uniques' | 'cta_clicks' | 'cta_rate' | 'trend';
@@ -10,7 +10,7 @@ const fmt = (n: number) => n.toLocaleString('pt-BR');
 const fmtPct = (n: number) => n.toFixed(1).replace('.', ',') + '%';
 
 export default function AnalyticsPage() {
-  const { data, loading, period, setPeriod } = useAnalytics();
+  const { data, loading, period, setPeriod, refetch } = useAnalytics();
   const [sortKey, setSortKey] = useState<SortKey>('pageviews');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const navigate = useNavigate();
@@ -54,20 +54,30 @@ export default function AnalyticsPage() {
           </div>
           <p className="text-sm text-text-muted mt-1">Acompanhe visitas e conversões das suas páginas.</p>
         </div>
-        <div className="flex gap-1 bg-surface-2/80 rounded-xl p-1">
-          {periods.map(p => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg cursor-pointer transition-all duration-200 ${
-                period === p.value
-                  ? 'bg-surface shadow-sm text-text'
-                  : 'text-text-muted hover:text-text'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            disabled={loading}
+            className="p-2 rounded-xl bg-surface-2/80 text-text-muted hover:text-text hover:bg-surface-2 transition-all duration-200 cursor-pointer disabled:opacity-50"
+            title="Atualizar dados"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <div className="flex gap-1 bg-surface-2/80 rounded-xl p-1">
+            {periods.map(p => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg cursor-pointer transition-all duration-200 ${
+                  period === p.value
+                    ? 'bg-surface shadow-sm text-text'
+                    : 'text-text-muted hover:text-text'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

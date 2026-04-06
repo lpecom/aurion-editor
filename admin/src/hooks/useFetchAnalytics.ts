@@ -45,7 +45,7 @@ interface PageDetail {
   utms: { source: string; medium: string; campaign: string; count: number }[];
 }
 
-export function useAnalytics(initialPeriod: Period = '7d') {
+export function useAnalytics(initialPeriod: Period = '7d', autoRefreshMs = 60_000) {
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,10 +64,16 @@ export function useAnalytics(initialPeriod: Period = '7d') {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    if (!autoRefreshMs) return;
+    const id = setInterval(fetchData, autoRefreshMs);
+    return () => clearInterval(id);
+  }, [fetchData, autoRefreshMs]);
+
   return { data, loading, period, setPeriod, refetch: fetchData };
 }
 
-export function usePageAnalytics(pageId: string, initialPeriod: Period = '7d') {
+export function usePageAnalytics(pageId: string, initialPeriod: Period = '7d', autoRefreshMs = 60_000) {
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [data, setData] = useState<PageDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,5 +92,11 @@ export function usePageAnalytics(pageId: string, initialPeriod: Period = '7d') {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  return { data, loading, period, setPeriod };
+  useEffect(() => {
+    if (!autoRefreshMs) return;
+    const id = setInterval(fetchData, autoRefreshMs);
+    return () => clearInterval(id);
+  }, [fetchData, autoRefreshMs]);
+
+  return { data, loading, period, setPeriod, refetch: fetchData };
 }

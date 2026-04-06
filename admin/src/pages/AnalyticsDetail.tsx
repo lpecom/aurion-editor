@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, Smartphone, Tablet, Eye, Users, MousePointerClick, Percent } from 'lucide-react';
+import { ArrowLeft, Monitor, Smartphone, Tablet, Eye, Users, MousePointerClick, Percent, RefreshCw } from 'lucide-react';
 import { usePageAnalytics } from '../hooks/useFetchAnalytics';
 import AnalyticsChart from '../components/AnalyticsChart';
 
@@ -9,7 +9,7 @@ const fmtPct = (n: number) => n.toFixed(1).replace('.', ',') + '%';
 export default function AnalyticsDetail() {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
-  const { data, loading, period, setPeriod } = usePageAnalytics(pageId!, '7d');
+  const { data, loading, period, setPeriod, refetch } = usePageAnalytics(pageId!, '7d');
 
   const periods = [
     { value: 'today' as const, label: 'Hoje' },
@@ -71,6 +71,15 @@ export default function AnalyticsDetail() {
             <p className="text-xs text-text-muted font-mono">/{data.page_id}</p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            disabled={loading}
+            className="p-2 rounded-xl bg-surface-2/80 text-text-muted hover:text-text hover:bg-surface-2 transition-all duration-200 cursor-pointer disabled:opacity-50"
+            title="Atualizar dados"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         <div className="flex gap-1 bg-surface-2/80 rounded-xl p-1">
           {periods.map(p => (
             <button
@@ -85,6 +94,7 @@ export default function AnalyticsDetail() {
               {p.label}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
