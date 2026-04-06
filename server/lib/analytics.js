@@ -55,9 +55,9 @@ const VALID_EVENTS = new Set(['pageview', 'cta_click']);
 const VALID_DEVICES = new Set(['mobile', 'desktop', 'tablet']);
 
 export function insertEvent(data) {
-  if (!VALID_EVENTS.has(data.event_type)) { console.log('[analytics] rejected: invalid event_type', data.event_type); return false; }
-  if (!isValidUUID(data.visitor_id)) { console.log('[analytics] rejected: invalid visitor_id', data.visitor_id); return false; }
-  if (!isValidPageId(data.page_id)) { console.log('[analytics] rejected: invalid page_id', data.page_id); return false; }
+  if (!VALID_EVENTS.has(data.event_type)) return false;
+  if (!isValidUUID(data.visitor_id)) return false;
+  if (!isValidPageId(data.page_id)) return false;
   if (data.device && !VALID_DEVICES.has(data.device)) data.device = null;
 
   if (data.event_type === 'pageview' && isDuplicatePageview(data.page_id, data.visitor_id)) {
