@@ -127,7 +127,11 @@ export function getAnalyticsSummary(period, pageId) {
       p.slug,
       SUM(CASE WHEN e.event_type = 'pageview' THEN 1 ELSE 0 END) as pageviews,
       COUNT(DISTINCT CASE WHEN e.event_type = 'pageview' THEN e.visitor_id END) as uniques,
-      SUM(CASE WHEN e.event_type = 'cta_click' THEN 1 ELSE 0 END) as cta_clicks
+      SUM(CASE WHEN e.event_type = 'cta_click' THEN 1 ELSE 0 END) as cta_clicks,
+      COALESCE(
+        (SELECT d.domain FROM page_domains pd JOIN domains d ON d.id = pd.domain_id WHERE pd.page_id = e.page_id LIMIT 1),
+        (SELECT d.domain FROM category_domains cd JOIN domains d ON d.id = cd.domain_id WHERE cd.category_id = p.category_id LIMIT 1)
+      ) as domain
     FROM analytics_events e
     JOIN pages p ON p.id = e.page_id
     WHERE e.created_at >= ${since} ${pageFilterAliased}

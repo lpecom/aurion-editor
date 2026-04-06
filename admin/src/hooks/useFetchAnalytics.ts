@@ -7,6 +7,7 @@ interface PageMetrics {
   page_id: string;
   title: string;
   slug: string;
+  domain: string | null;
   pageviews: number;
   uniques: number;
   cta_clicks: number;

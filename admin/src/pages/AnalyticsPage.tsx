@@ -179,7 +179,7 @@ export default function AnalyticsPage() {
                     <td className="px-5 py-3.5 text-sm text-text-muted font-mono">{i + 1}</td>
                     <td className="px-5 py-3.5">
                       <div className="text-sm font-medium text-text">{page.title}</div>
-                      <div className="text-xs text-text-muted font-mono mt-0.5">/{page.slug}</div>
+                      <div className="text-xs text-text-muted font-mono mt-0.5">{page.domain ? `${page.domain}/` : '/'}{page.slug}</div>
                     </td>
                     <td className="px-5 py-3.5 text-right text-sm font-semibold text-text tabular-nums">{fmt(page.pageviews)}</td>
                     <td className="px-5 py-3.5 text-right text-sm text-text-muted tabular-nums">{fmt(page.uniques)}</td>
