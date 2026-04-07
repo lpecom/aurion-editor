@@ -91,22 +91,24 @@ export function startCleanupJob() {
   setInterval(cleanupOldEvents, 24 * 60 * 60 * 1000);
 }
 
-// ── Query helpers ──
+// ── Query helpers (Brazil GMT-3) ──
+const TZ = '-3 hours';
+
 function periodToSQL(period) {
   switch (period) {
-    case 'today': return "date('now')";
-    case '30d': return "datetime('now', '-30 days')";
+    case 'today': return `date('now', '${TZ}')`;
+    case '30d': return `datetime('now', '${TZ}', '-30 days')`;
     case '7d':
-    default: return "datetime('now', '-7 days')";
+    default: return `datetime('now', '${TZ}', '-7 days')`;
   }
 }
 
 function previousPeriodSQL(period) {
   switch (period) {
-    case 'today': return { start: "date('now', '-1 day')", end: "date('now')" };
-    case '30d': return { start: "datetime('now', '-60 days')", end: "datetime('now', '-30 days')" };
+    case 'today': return { start: `date('now', '${TZ}', '-1 day')`, end: `date('now', '${TZ}')` };
+    case '30d': return { start: `datetime('now', '${TZ}', '-60 days')`, end: `datetime('now', '${TZ}', '-30 days')` };
     case '7d':
-    default: return { start: "datetime('now', '-14 days')", end: "datetime('now', '-7 days')" };
+    default: return { start: `datetime('now', '${TZ}', '-14 days')`, end: `datetime('now', '${TZ}', '-7 days')` };
   }
 }
 
