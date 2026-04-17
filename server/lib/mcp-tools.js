@@ -84,7 +84,7 @@ export const MCP_TOOLS = [
   },
   {
     name: 'create_page',
-    description: 'Create a new page',
+    description: 'Create a new page. IMPORTANT: pass domain_ids to associate the page with one or more Cloudflare domains — without it, publish_page will mark the page published in the DB but it will NOT be deployed to R2, so any request to the domain returns 404.',
     inputSchema: {
       type: 'object',
       required: ['title', 'slug', 'type'],
@@ -95,12 +95,14 @@ export const MCP_TOOLS = [
         html_content: { type: 'string', description: 'HTML content of the page' },
         lang: { type: 'string', description: 'Language code, defaults to pt-BR' },
         parent_page_id: { type: 'string', description: 'Parent page ID (for auxiliar type)' },
+        domain_ids: { type: 'array', items: { type: 'string' }, description: 'Cloudflare domain IDs from list_domains. Required for publish to actually serve the page on a domain.' },
+        primary_domain_id: { type: 'string', description: 'Which of the domain_ids is primary (used for canonical URL).' },
       },
     },
   },
   {
     name: 'edit_page',
-    description: 'Edit an existing page. When html_content is provided, project_data is automatically synced (set to null) so the editor re-imports from HTML on next open.',
+    description: 'Edit an existing page. When html_content is provided, project_data is automatically synced (set to null) so the editor re-imports from HTML on next open. Pass domain_ids to replace domain associations (pass [] to clear).',
     inputSchema: {
       type: 'object',
       required: ['id'],
@@ -112,12 +114,14 @@ export const MCP_TOOLS = [
         project_data: { type: 'string', description: 'GrapesJS project JSON. If omitted but html_content is provided, project_data is cleared so editor re-imports from HTML.' },
         lang: { type: 'string' },
         frontmatter: { type: 'string' },
+        domain_ids: { type: 'array', items: { type: 'string' }, description: 'Replace domain associations (from list_domains). Omit to leave unchanged; pass [] to clear.' },
+        primary_domain_id: { type: 'string', description: 'Which of the domain_ids is primary.' },
       },
     },
   },
   {
     name: 'publish_page',
-    description: 'Publish a page (makes it live)',
+    description: 'Publish a page (sets status=published, uploads HTML+assets to R2 for each associated CF domain, purges cache). Response includes deployed_to list; a warning is returned if no CF domain is associated (page will not be served anywhere).',
     inputSchema: {
       type: 'object',
       required: ['id'],
@@ -297,7 +301,14 @@ export async function executeTool(toolName, params, db, apiKey) {
       if (params.status) { sql += ' AND status = ?'; binds.push(params.status); }
       if (params.lang) { sql += ' AND lang = ?'; binds.push(params.lang); }
       sql += ' ORDER BY created_at DESC';
-      return db.prepare(sql).all(...binds);
+      const rows = db.prepare(sql).all(...binds);
+      const domStmt = db.prepare(`
+        SELECT d.id, d.domain, pd.is_primary
+        FROM domains d JOIN page_domains pd ON pd.domain_id = d.id
+        WHERE pd.page_id = ?
+        ORDER BY pd.is_primary DESC, d.domain ASC
+      `);
+      return rows.map(r => ({ ...r, domains: domStmt.all(r.id) }));
     }
 
     case 'get_page': {
@@ -307,6 +318,12 @@ export async function executeTool(toolName, params, db, apiKey) {
       if (!page) throw new Error('Page not found');
       const { parseSectionTree } = await import('./section-utils.js');
       const { sections, note } = parseSectionTree(page.html_content || '');
+      const domains = db.prepare(`
+        SELECT d.id, d.domain, pd.is_primary
+        FROM domains d JOIN page_domains pd ON pd.domain_id = d.id
+        WHERE pd.page_id = ?
+        ORDER BY pd.is_primary DESC, d.domain ASC
+      `).all(page.id);
       const result = {
         id: page.id,
         title: page.title,
@@ -315,6 +332,7 @@ export async function executeTool(toolName, params, db, apiKey) {
         status: page.status,
         lang: page.lang,
         updated_at: page.updated_at,
+        domains,
         sections,
       };
       if (note) result.note = note;
@@ -389,7 +407,7 @@ export async function executeTool(toolName, params, db, apiKey) {
 
     case 'create_page': {
       const id = randomUUID();
-      const { title, slug, type, html_content, lang } = params;
+      const { title, slug, type, html_content, lang, domain_ids, primary_domain_id } = params;
       const existing = db.prepare('SELECT id FROM pages WHERE slug = ?').get(slug);
       if (existing) throw new Error('Slug already exists');
       db.prepare('INSERT INTO pages (id, title, slug, type, lang, status, html_content) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
@@ -398,8 +416,21 @@ export async function executeTool(toolName, params, db, apiKey) {
       if (type === 'auxiliar' && params.parent_page_id) {
         db.prepare('INSERT INTO page_parents (page_id, parent_page_id, is_primary) VALUES (?, ?, 1)').run(id, params.parent_page_id);
       }
+      if (Array.isArray(domain_ids) && domain_ids.length > 0) {
+        const ins = db.prepare('INSERT INTO page_domains (page_id, domain_id, is_primary) VALUES (?, ?, ?)');
+        for (const domainId of domain_ids) {
+          ins.run(id, domainId, domainId === primary_domain_id ? 1 : 0);
+        }
+      }
       logActivity(db, apiKey, 'create_page', 'page', id, title, { slug });
-      return db.prepare('SELECT id, title, slug, type, status, created_at FROM pages WHERE id = ?').get(id);
+      const created = db.prepare('SELECT id, title, slug, type, status, created_at FROM pages WHERE id = ?').get(id);
+      const domains = db.prepare(`
+        SELECT d.id, d.domain, pd.is_primary
+        FROM domains d JOIN page_domains pd ON pd.domain_id = d.id
+        WHERE pd.page_id = ?
+        ORDER BY pd.is_primary DESC, d.domain ASC
+      `).all(id);
+      return { ...created, domains };
     }
 
     case 'edit_page': {
@@ -422,27 +453,66 @@ export async function executeTool(toolName, params, db, apiKey) {
         if (pdIdx !== -1) { updates.splice(pdIdx, 1); values.splice(pdIdx, 1); }
         updates.push('project_data = NULL');
       }
-      if (updates.length === 0) throw new Error('No fields to update');
-      updates.push("updated_at = datetime('now')");
-      values.push(params.id);
-      db.prepare(`UPDATE pages SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+      const hasDomainUpdate = Array.isArray(params.domain_ids);
+      if (updates.length === 0 && !hasDomainUpdate) throw new Error('No fields to update');
+      if (updates.length > 0) {
+        updates.push("updated_at = datetime('now')");
+        values.push(params.id);
+        db.prepare(`UPDATE pages SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+      }
+      if (hasDomainUpdate) {
+        const tx = db.transaction(() => {
+          db.prepare('DELETE FROM page_domains WHERE page_id = ?').run(params.id);
+          const ins = db.prepare('INSERT INTO page_domains (page_id, domain_id, is_primary) VALUES (?, ?, ?)');
+          for (const domainId of params.domain_ids) {
+            ins.run(params.id, domainId, domainId === params.primary_domain_id ? 1 : 0);
+          }
+        });
+        tx();
+      }
       logActivity(db, apiKey, 'edit_page', 'page', params.id, params.title || page.title, { slug: params.slug || page.slug });
-      return db.prepare('SELECT id, title, slug, type, status, updated_at FROM pages WHERE id = ?').get(params.id);
+      const updated = db.prepare('SELECT id, title, slug, type, status, updated_at FROM pages WHERE id = ?').get(params.id);
+      const domains = db.prepare(`
+        SELECT d.id, d.domain, pd.is_primary
+        FROM domains d JOIN page_domains pd ON pd.domain_id = d.id
+        WHERE pd.page_id = ?
+        ORDER BY pd.is_primary DESC, d.domain ASC
+      `).all(params.id);
+      return { ...updated, domains };
     }
 
     case 'publish_page': {
       const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(params.id);
       if (!page) throw new Error('Page not found');
       db.prepare("UPDATE pages SET status = 'published', updated_at = datetime('now') WHERE id = ?").run(params.id);
+      let deployError = null;
       try {
         const { publishPage } = await import('../../lib/publish.js');
         const updatedPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(params.id);
         await publishPage(updatedPage, db);
       } catch (err) {
-        // publish error is non-fatal for the status update
+        deployError = err.message;
       }
+      // Determine which CF domains this page actually gets deployed to
+      const cfDomains = db.prepare(`
+        SELECT DISTINCT d.id, d.domain, d.ssl_status
+        FROM domains d
+        LEFT JOIN page_domains pd ON pd.domain_id = d.id AND pd.page_id = ?
+        LEFT JOIN category_domains cd ON cd.domain_id = d.id
+        LEFT JOIN pages p ON p.category_id = cd.category_id AND p.id = ?
+        WHERE (pd.page_id IS NOT NULL OR p.id IS NOT NULL)
+          AND d.cloudflare_account_id IS NOT NULL
+          AND d.r2_bucket IS NOT NULL
+      `).all(params.id, params.id);
       logActivity(db, apiKey, 'publish_page', 'page', params.id, page.title, { slug: page.slug });
-      return { ok: true, message: `Page "${page.title}" published` };
+      const response = {
+        ok: true,
+        message: `Page "${page.title}" published`,
+        deployed_to: cfDomains.map(d => ({ id: d.id, domain: d.domain, url: `https://${d.domain}/${page.slug}`, ssl_status: d.ssl_status })),
+      };
+      if (deployError) response.warning = `Deploy step failed: ${deployError}`;
+      else if (cfDomains.length === 0) response.warning = 'Page marked as published but has no associated Cloudflare domain — it will NOT be served on any URL. Call edit_page with domain_ids (see list_domains) to associate a domain.';
+      return response;
     }
 
     case 'unpublish_page': {
